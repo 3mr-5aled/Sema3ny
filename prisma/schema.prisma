@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model StudyLevel {
+  id    Int    @id @default(autoincrement())
+  name  String
+  units Unit[]
+
+  @@map("study_levels")
+}
+
+model Unit {
+  id           Int        @id @default(autoincrement())
+  name         String
+  studyLevel   StudyLevel @relation(fields: [studyLevelId], references: [id], onDelete: Cascade)
+  studyLevelId Int
+  lessons      Lesson[]
+
+  @@map("units")
+}
+
+model Lesson {
+  id     Int    @id @default(autoincrement())
+  name   String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  unitId Int
+  words  Word[]
+
+  @@map("lessons")
+}
+
+model Word {
+  id       Int    @id @default(autoincrement())
+  en       String
+  ar       String
+  part     String
+  category String // "key" or "additional"
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId Int
+
+  @@map("words")
+}
