@@ -13,7 +13,7 @@ export function USFlag({ className = "w-4 h-4" }: { className?: string }) {
       <path
         d="M0,450H7410m0,600H0m0,600H7410m0,600H0m0,600H7410m0,600H0"
         stroke="#FFF"
-        stroke-width="300"
+        strokeWidth="300"
       />
       <path d="M0,0h2964v2100H0" fill="#0a3161" />
       <g fill="#FFF">

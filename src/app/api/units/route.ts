@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const unit = await prisma.unit.create({
       data: {
         name,
-        studyLevelId,
+        gradeId: studyLevelId,
       },
     })
 

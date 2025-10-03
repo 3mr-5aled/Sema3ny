@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { FaPlay, FaVolumeUp } from "react-icons/fa"
+import { useEffect, useState } from "react"
+import { FaVolumeUp } from "react-icons/fa"
 import { USFlag, UKFlag } from "./Flags"
 
 interface Word {
@@ -39,39 +39,164 @@ const partOfSpeechLabels = {
 }
 
 export function WordCards({ words }: WordCardsProps) {
-  const [currentAccent, setCurrentAccent] = useState<"american" | "british">(
-    "american"
-  )
+  const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
 
-  const speakWord = (
-    word: string,
-    accent: "american" | "british" = currentAccent
-  ) => {
-    if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(word)
-
-      // Set voice based on accent preference
-      const voices = speechSynthesis.getVoices()
-      const preferredVoice = voices.find((voice) => {
-        if (accent === "british") {
-          return (
-            voice.lang.includes("en-GB") ||
-            voice.name.toLowerCase().includes("british")
-          )
-        } else {
-          return (
-            voice.lang.includes("en-US") ||
-            voice.name.toLowerCase().includes("american")
-          )
-        }
-      })
-
-      if (preferredVoice) {
-        utterance.voice = preferredVoice
+  // Ensure voices are loaded
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const loadVoices = () => {
+        speechSynthesis.getVoices()
       }
 
-      utterance.rate = 0.8
-      utterance.pitch = 1
+      loadVoices()
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices
+      }
+    }
+  }, [])
+
+  const speakWord = (
+    wordId: number,
+    word: string,
+    accent: "american" | "british"
+  ) => {
+    if ("speechSynthesis" in window) {
+      // Cancel any ongoing speech
+      speechSynthesis.cancel()
+
+      // Set loading state
+      setSpeakingWordId(`${wordId}-${accent}`)
+
+      const utterance = new SpeechSynthesisUtterance(word)
+      const voices = speechSynthesis.getVoices()
+
+      // Find the best voice based on accent parameter
+      let selectedVoice = null
+
+      if (accent === "british") {
+        // Priority list for British voices (most natural first)
+        const britishVoiceNames = [
+          // Google voices (most natural, online)
+          "Google UK English Female",
+          "Google UK English Male",
+          // Microsoft Natural voices (Windows 11)
+          "Microsoft Libby Online (Natural) - English (United Kingdom)",
+          "Microsoft Ryan Online (Natural) - English (United Kingdom)",
+          "Microsoft Sonia Online (Natural) - English (United Kingdom)",
+          // Microsoft Premium voices
+          "Microsoft Hazel Desktop - English (Great Britain)",
+          "Microsoft George - English (United Kingdom)",
+          "Microsoft Susan - English (United Kingdom)",
+          // Fallback voices
+          "en-GB-LibbyNeural",
+          "en-GB-RyanNeural",
+        ]
+
+        // Try to find a preferred British voice
+        for (const name of britishVoiceNames) {
+          selectedVoice = voices.find((v) => v.name === name)
+          if (selectedVoice) break
+        }
+
+        // Try to find any online/natural voice
+        if (!selectedVoice) {
+          selectedVoice = voices.find(
+            (v) =>
+              (v.lang === "en-GB" || v.lang.startsWith("en-GB")) &&
+              (v.name.toLowerCase().includes("natural") ||
+                v.name.toLowerCase().includes("online") ||
+                v.name.toLowerCase().includes("neural") ||
+                v.name.toLowerCase().includes("google"))
+          )
+        }
+
+        // Fallback to any en-GB voice
+        if (!selectedVoice) {
+          selectedVoice = voices.find(
+            (v) =>
+              v.lang === "en-GB" ||
+              v.lang.startsWith("en-GB") ||
+              v.name.toLowerCase().includes("british") ||
+              v.name.toLowerCase().includes("uk")
+          )
+        }
+      } else {
+        // Priority list for American voices (most natural first)
+        const americanVoiceNames = [
+          // Google voices (most natural, online)
+          "Google US English Female",
+          "Google US English Male",
+          "Google US English",
+          // Microsoft Natural voices (Windows 11)
+          "Microsoft Aria Online (Natural) - English (United States)",
+          "Microsoft Jenny Online (Natural) - English (United States)",
+          "Microsoft Guy Online (Natural) - English (United States)",
+          "Microsoft Ana Online (Natural) - English (United States)",
+          // Microsoft Premium voices
+          "Microsoft Zira Desktop - English (United States)",
+          "Microsoft David Desktop - English (United States)",
+          "Microsoft Mark - English (United States)",
+          // Fallback voices
+          "en-US-AriaNeural",
+          "en-US-JennyNeural",
+          "en-US-GuyNeural",
+        ]
+
+        // Try to find a preferred American voice
+        for (const name of americanVoiceNames) {
+          selectedVoice = voices.find((v) => v.name === name)
+          if (selectedVoice) break
+        }
+
+        // Try to find any online/natural voice
+        if (!selectedVoice) {
+          selectedVoice = voices.find(
+            (v) =>
+              (v.lang === "en-US" || v.lang.startsWith("en-US")) &&
+              (v.name.toLowerCase().includes("natural") ||
+                v.name.toLowerCase().includes("online") ||
+                v.name.toLowerCase().includes("neural") ||
+                v.name.toLowerCase().includes("google"))
+          )
+        }
+
+        // Fallback to any en-US voice
+        if (!selectedVoice) {
+          selectedVoice = voices.find(
+            (v) =>
+              v.lang === "en-US" ||
+              v.lang.startsWith("en-US") ||
+              v.name.toLowerCase().includes("american") ||
+              v.name.toLowerCase().includes("us")
+          )
+        }
+      }
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice
+        console.log(
+          `Using voice: ${selectedVoice.name} (${selectedVoice.lang})`
+        )
+      }
+
+      // Optimize for natural speech
+      utterance.rate = 0.9
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+
+      // Add event listeners for loading state
+      utterance.onstart = () => {
+        setSpeakingWordId(`${wordId}-${accent}`)
+      }
+
+      utterance.onend = () => {
+        setSpeakingWordId(null)
+      }
+
+      utterance.onerror = () => {
+        setSpeakingWordId(null)
+      }
+
       speechSynthesis.speak(utterance)
     }
   }
@@ -89,86 +214,57 @@ export function WordCards({ words }: WordCardsProps) {
     )
   }
 
-  const keyWords = words.filter((word) => word.category === "key")
-  const additionalWords = words.filter((word) => word.category === "additional")
+  // Group words by category dynamically
+  const wordsByCategory: Record<string, Word[]> = {}
+  words.forEach((word) => {
+    const category = word.category || "Uncategorized"
+    if (!wordsByCategory[category]) {
+      wordsByCategory[category] = []
+    }
+    wordsByCategory[category].push(word)
+  })
+
+  const categories = Object.keys(wordsByCategory)
+
+  // Define colors for sections (cycling through colors)
+  const sectionColors = [
+    "bg-blue-600",
+    "bg-green-600",
+    "bg-purple-600",
+    "bg-orange-600",
+    "bg-pink-600",
+    "bg-indigo-600",
+  ]
 
   return (
     <div className="space-y-8">
-      {/* Accent Selection */}
-      <div className="flex justify-center space-x-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setCurrentAccent("american")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              currentAccent === "american"
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            }`}
-          >
-            <span className="flex items-center space-x-2">
-              <span>American</span>
-              <USFlag className="w-5 h-3" />
-            </span>
-          </button>
-          <button
-            onClick={() => setCurrentAccent("british")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              currentAccent === "british"
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            }`}
-          >
-            <span className="flex items-center space-x-2">
-              <span>British</span>
-              <UKFlag className="w-5 h-3" />
-            </span>
-          </button>
-        </div>
-      </div>
+      {/* Dynamic Category Sections */}
+      {categories.map((category, index) => {
+        const categoryWords = wordsByCategory[category]
+        const colorClass = sectionColors[index % sectionColors.length]
 
-      {/* Key Words Section */}
-      {keyWords.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
-            <span className="w-4 h-4 bg-blue-600 rounded"></span>
-            <span>Key Words</span>
-          </h2>
+        return (
+          <section key={category}>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+              <span className={`w-4 h-4 ${colorClass} rounded`}></span>
+              <span>{category}</span>
+            </h2>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {keyWords.map((word) => (
-              <WordCard
-                key={word.id}
-                word={word}
-                onSpeak={speakWord}
-                partOfSpeechColors={partOfSpeechColors}
-                partOfSpeechLabels={partOfSpeechLabels}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Additional Words Section */}
-      {additionalWords.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
-            <span className="w-4 h-4 bg-green-600 rounded"></span>
-            <span>Additional Words</span>
-          </h2>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {additionalWords.map((word) => (
-              <WordCard
-                key={word.id}
-                word={word}
-                onSpeak={speakWord}
-                partOfSpeechColors={partOfSpeechColors}
-                partOfSpeechLabels={partOfSpeechLabels}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {categoryWords.map((word) => (
+                <WordCard
+                  key={word.id}
+                  word={word}
+                  onSpeak={speakWord}
+                  speakingWordId={speakingWordId}
+                  partOfSpeechColors={partOfSpeechColors}
+                  partOfSpeechLabels={partOfSpeechLabels}
+                />
+              ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }
@@ -176,11 +272,17 @@ export function WordCards({ words }: WordCardsProps) {
 function WordCard({
   word,
   onSpeak,
+  speakingWordId,
   partOfSpeechColors,
   partOfSpeechLabels,
 }: {
   word: Word
-  onSpeak: (word: string, accent: "american" | "british") => void
+  onSpeak: (
+    wordId: number,
+    word: string,
+    accent: "american" | "british"
+  ) => void
+  speakingWordId: string | null
   partOfSpeechColors: Record<string, string>
   partOfSpeechLabels: Record<string, string>
 }) {
@@ -188,6 +290,9 @@ function WordCard({
     partOfSpeechColors[word.part] ||
     "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
   const partLabel = partOfSpeechLabels[word.part] || word.part
+
+  const isAmericanSpeaking = speakingWordId === `${word.id}-american`
+  const isBritishSpeaking = speakingWordId === `${word.id}-british`
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 dark:border-gray-700 group">
@@ -197,21 +302,55 @@ function WordCard({
           {word.en}
         </h3>
 
-        {/* Pronunciation Buttons */}
+        {/* Two Pronunciation Buttons - American & British */}
         <div className="flex space-x-2">
           <button
-            onClick={() => onSpeak(word.en, "american")}
-            className="p-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+            onClick={() => onSpeak(word.id, word.en, "american")}
+            disabled={isAmericanSpeaking}
+            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
+              isAmericanSpeaking
+                ? "bg-blue-400 cursor-wait"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
             title="American pronunciation"
           >
-            <FaPlay className="h-3 w-3" />
+            <USFlag className="w-5 h-3" />
+            {isAmericanSpeaking ? (
+              <div className="relative h-3.5 w-3.5">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-2 w-2 bg-white rounded-full animate-ping"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-1.5 w-1.5 bg-white rounded-full"></div>
+                </div>
+              </div>
+            ) : (
+              <FaVolumeUp className="h-3.5 w-3.5" />
+            )}
           </button>
           <button
-            onClick={() => onSpeak(word.en, "british")}
-            className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+            onClick={() => onSpeak(word.id, word.en, "british")}
+            disabled={isBritishSpeaking}
+            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
+              isBritishSpeaking
+                ? "bg-indigo-400 cursor-wait"
+                : "bg-indigo-500 hover:bg-indigo-600"
+            }`}
             title="British pronunciation"
           >
-            <FaVolumeUp className="h-3 w-3" />
+            <UKFlag className="w-5 h-3" />
+            {isBritishSpeaking ? (
+              <div className="relative h-3.5 w-3.5">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-2 w-2 bg-white rounded-full animate-ping"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-1.5 w-1.5 bg-white rounded-full"></div>
+                </div>
+              </div>
+            ) : (
+              <FaVolumeUp className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
@@ -228,22 +367,11 @@ function WordCard({
       </div>
 
       {/* Part of Speech Tag */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-start">
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${partColor}`}
         >
           {partLabel}
-        </span>
-
-        {/* Category Badge */}
-        <span
-          className={`px-2 py-1 rounded text-xs font-medium ${
-            word.category === "key"
-              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-              : "bg-green-50 text-green-700 dark:bg-green-900/50 dark:text-green-300"
-          }`}
-        >
-          {word.category === "key" ? "Key" : "Additional"}
         </span>
       </div>
     </div>

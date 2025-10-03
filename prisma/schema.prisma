@@ -11,29 +11,32 @@ datasource db {
 }
 
 model StudyLevel {
-  id    Int    @id @default(autoincrement())
+  id    Int     @id @default(autoincrement())
   name  String
+  slug  String?
   units Unit[]
 
-  @@map("study_levels")
+  @@unique([slug])
+  @@map("grades")
 }
 
 model Unit {
-  id           Int        @id @default(autoincrement())
-  name         String
-  studyLevel   StudyLevel @relation(fields: [studyLevelId], references: [id], onDelete: Cascade)
-  studyLevelId Int
-  lessons      Lesson[]
+  id      Int        @id @default(autoincrement())
+  name    String
+  grade   StudyLevel @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  gradeId Int
+  lessons Lesson[]
 
   @@map("units")
 }
 
 model Lesson {
-  id     Int    @id @default(autoincrement())
-  name   String
-  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  unitId Int
-  words  Word[]
+  id       Int     @id @default(autoincrement())
+  name     String
+  sections String? @default("[]")
+  unit     Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  unitId   Int
+  words    Word[]
 
   @@map("lessons")
 }

@@ -13,6 +13,8 @@ import {
   FaTrash,
   FaSave,
   FaTimes,
+  FaCopy,
+  FaCheck,
 } from "react-icons/fa"
 
 interface Word {
@@ -27,6 +29,7 @@ interface Lesson {
   id: number
   name: string
   words: Word[]
+  sections?: string[] | null
 }
 
 interface Unit {
@@ -48,8 +51,29 @@ interface WordData {
 }
 
 interface WordsPayload {
-  key?: WordData[]
-  additional?: WordData[]
+  [sectionName: string]: WordData[]
+}
+
+// Helper functions for sections
+const getDefaultSections = (): string[] => ["Key Words", "Additional Words"]
+
+const getLessonSections = (lesson: Lesson): string[] => {
+  if (lesson.sections && Array.isArray(lesson.sections)) {
+    return lesson.sections
+  }
+  return getDefaultSections()
+}
+
+const getSectionColor = (index: number): string => {
+  const colors = [
+    "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+    "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
+    "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100",
+    "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100",
+    "bg-pink-100 text-pink-800 dark:bg-pink-800 dark:text-pink-100",
+    "bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100",
+  ]
+  return colors[index % colors.length]
 }
 
 export function TeacherDashboard() {
@@ -101,7 +125,7 @@ export function TeacherDashboard() {
     en: "",
     ar: "",
     part: "",
-    category: "key",
+    category: "Key Words",
   })
   const [isAddingSingleWord, setIsAddingSingleWord] = useState(false)
 
@@ -114,16 +138,81 @@ export function TeacherDashboard() {
     category: "",
   })
 
+  // Section management states
+  const [showSectionModal, setShowSectionModal] = useState(false)
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
+  const [newSectionName, setNewSectionName] = useState("")
+  const [isAddingSection, setIsAddingSection] = useState(false)
+  const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(
+    null
+  )
+  const [editSectionName, setEditSectionName] = useState("")
+
+  // Bulk words modal state
+  const [showBulkWordsModal, setShowBulkWordsModal] = useState(false)
+  const [bulkWordsLessonId, setBulkWordsLessonId] = useState<number | null>(
+    null
+  )
+
+  // Expandable sections state
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set()
+  )
+
+  // Copy link state
+  const [copiedLessonId, setCopiedLessonId] = useState<number | null>(null)
+
   useEffect(() => {
     fetchLevels()
   }, [])
+
+  // Auto-expand all sections when levels are loaded or updated
+  useEffect(() => {
+    const allSectionKeys = new Set<string>(expandedSections) // Keep existing expanded state
+    levels.forEach((level) => {
+      level.units.forEach((unit) => {
+        unit.lessons.forEach((lesson) => {
+          const sections = getLessonSections(lesson)
+          sections.forEach((sectionName) => {
+            const sectionKey = `${lesson.id}-${sectionName}`
+            // Only add if there are words in this section OR if it's a new section
+            const sectionWords = lesson.words.filter(
+              (w) => w.category === sectionName
+            )
+            if (sectionWords.length > 0) {
+              allSectionKeys.add(sectionKey)
+            }
+          })
+        })
+      })
+    })
+    setExpandedSections(allSectionKeys)
+  }, [levels]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchLevels = async () => {
     try {
       const response = await fetch("/api/levels")
       if (response.ok) {
         const data = await response.json()
-        setLevels(data)
+        // Parse sections field for each lesson
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsedData = data.map((level: any) => ({
+          ...level,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          units: level.units.map((unit: any) => ({
+            ...unit,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            lessons: unit.lessons.map((lesson: any) => ({
+              ...lesson,
+              sections: lesson.sections
+                ? typeof lesson.sections === "string"
+                  ? JSON.parse(lesson.sections)
+                  : lesson.sections
+                : null,
+            })),
+          })),
+        }))
+        setLevels(parsedData)
       }
     } catch (error) {
       console.error("Error fetching levels:", error)
@@ -160,6 +249,16 @@ export function TeacherDashboard() {
       newExpanded.add(lessonId)
     }
     setExpandedLessons(newExpanded)
+  }
+
+  const toggleSection = (sectionKey: string) => {
+    const newExpanded = new Set(expandedSections)
+    if (newExpanded.has(sectionKey)) {
+      newExpanded.delete(sectionKey)
+    } else {
+      newExpanded.add(sectionKey)
+    }
+    setExpandedSections(newExpanded)
   }
 
   const createLevel = async () => {
@@ -249,7 +348,10 @@ export function TeacherDashboard() {
 
       if (response.ok) {
         setWordsJson("")
+        setShowBulkWordsModal(false)
+        setBulkWordsLessonId(null)
         await fetchLevels()
+        alert("Words added successfully!")
       } else {
         const error = await response.json()
         alert(`Error: ${error.error}`)
@@ -414,19 +516,31 @@ export function TeacherDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          words: [
+          [singleWordData.category]: [
             {
               en: singleWordData.en.trim(),
               ar: singleWordData.ar.trim(),
               part: singleWordData.part.trim(),
-              category: singleWordData.category,
             },
           ],
         }),
       })
 
       if (response.ok) {
-        setSingleWordData({ en: "", ar: "", part: "", category: "key" })
+        const lesson = levels
+          .flatMap((level) => level.units)
+          .flatMap((unit) => unit.lessons)
+          .find((l) => l.id === addWordLessonId)
+        const defaultCategory = lesson
+          ? getLessonSections(lesson)[0] || "Key Words"
+          : "Key Words"
+
+        setSingleWordData({
+          en: "",
+          ar: "",
+          part: "",
+          category: defaultCategory,
+        })
         setShowAddWordModal(false)
         setAddWordLessonId(null)
         await fetchLevels()
@@ -499,6 +613,43 @@ export function TeacherDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-6">
+        {/* Header with Clear Data Button */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Teacher Dashboard
+          </h1>
+          <button
+            onClick={async () => {
+              if (
+                !confirm(
+                  "⚠️ WARNING: This will delete ALL data (levels, units, lessons, words). This action cannot be undone. Are you sure?"
+                )
+              )
+                return
+
+              try {
+                // Delete all levels (cascade will delete everything)
+                const levelsResponse = await fetch("/api/levels")
+                const levelsData = await levelsResponse.json()
+
+                for (const level of levelsData) {
+                  await fetch(`/api/levels/${level.id}`, { method: "DELETE" })
+                }
+
+                await fetchLevels()
+                alert("All data cleared successfully!")
+              } catch (error) {
+                console.error("Error clearing data:", error)
+                alert("Failed to clear data")
+              }
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <FaTrash size={14} />
+            <span>Clear All Data</span>
+          </button>
+        </div>
+
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -607,8 +758,20 @@ export function TeacherDashboard() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     title="Select word category"
                   >
-                    <option value="key">Key Word</option>
-                    <option value="additional">Additional Word</option>
+                    {(() => {
+                      const lesson = levels
+                        .flatMap((l) => l.units)
+                        .flatMap((u) => u.lessons)
+                        .find((l) => l.id === addWordLessonId)
+                      const sections = lesson
+                        ? getLessonSections(lesson)
+                        : getDefaultSections()
+                      return sections.map((section, index) => (
+                        <option key={index} value={section}>
+                          {section}
+                        </option>
+                      ))
+                    })()}
                   </select>
                 </div>
               </div>
@@ -617,11 +780,12 @@ export function TeacherDashboard() {
                 <button
                   onClick={() => {
                     setShowAddWordModal(false)
+                    setAddWordLessonId(null)
                     setSingleWordData({
                       en: "",
                       ar: "",
                       part: "",
-                      category: "key",
+                      category: "Key Words",
                     })
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -1037,6 +1201,29 @@ export function TeacherDashboard() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation()
+                                                const url = `${window.location.origin}/levels/${level.id}/units/${unit.id}/lessons/${lesson.id}`
+                                                navigator.clipboard.writeText(
+                                                  url
+                                                )
+                                                setCopiedLessonId(lesson.id)
+                                                setTimeout(
+                                                  () => setCopiedLessonId(null),
+                                                  2000
+                                                )
+                                              }}
+                                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors p-2 rounded hover:bg-green-50 dark:hover:bg-green-900"
+                                              title="Copy lesson link"
+                                              aria-label={`Copy link for ${lesson.name}`}
+                                            >
+                                              {copiedLessonId === lesson.id ? (
+                                                <FaCheck size={14} />
+                                              ) : (
+                                                <FaCopy size={14} />
+                                              )}
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
                                                 startEditLesson(lesson)
                                               }}
                                               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900"
@@ -1068,226 +1255,353 @@ export function TeacherDashboard() {
                                     {/* Lesson Content */}
                                     {expandedLessons.has(lesson.id) && (
                                       <div className="px-3 pb-3 space-y-3">
-                                        {/* Add Words Form */}
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                                          <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                                            Add Words (JSON Format)
-                                          </h4>
-                                          <textarea
-                                            value={wordsJson}
-                                            onChange={(e) =>
-                                              setWordsJson(e.target.value)
-                                            }
-                                            placeholder={`{
-  "key": [
-    { "en": "awkward", "ar": "مُحرِج/غير مُريح", "part": "adj" },
-    { "en": "laughter", "ar": "ضِحك", "part": "n" }
-  ],
-  "additional": [
-    { "en": "absence", "ar": "غياب", "part": "n" },
-    { "en": "physically", "ar": "جسدياً", "part": "adv" }
-  ]
-}`}
-                                            className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white font-mono text-sm"
-                                          />
+                                        {/* Action Buttons */}
+                                        <div className="flex flex-wrap gap-2">
                                           <button
-                                            onClick={() => addWords(lesson.id)}
-                                            disabled={
-                                              !wordsJson.trim() ||
-                                              addingWordsToLesson === lesson.id
-                                            }
-                                            className="mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2 rounded transition-colors flex items-center space-x-2"
+                                            onClick={() => {
+                                              setBulkWordsLessonId(lesson.id)
+                                              setShowBulkWordsModal(true)
+                                            }}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm transition-colors flex items-center space-x-2"
                                           >
-                                            {addingWordsToLesson ===
-                                            lesson.id ? (
-                                              <FaSpinner className="animate-spin" />
-                                            ) : (
-                                              <FaPlus />
-                                            )}
-                                            <span>Add Words</span>
+                                            <FaPlus size={14} />
+                                            <span>Add Bulk Words</span>
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setSelectedLessonId(lesson.id)
+                                              setShowSectionModal(true)
+                                            }}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors flex items-center space-x-2"
+                                          >
+                                            <FaLayerGroup size={14} />
+                                            <span>Manage Sections</span>
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setAddWordLessonId(lesson.id)
+                                              // Set default category to first section of this lesson
+                                              const firstSection =
+                                                getLessonSections(lesson)[0] ||
+                                                "Key Words"
+                                              setSingleWordData({
+                                                en: "",
+                                                ar: "",
+                                                part: "",
+                                                category: firstSection,
+                                              })
+                                              setShowAddWordModal(true)
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors flex items-center space-x-2"
+                                          >
+                                            <FaPlus size={14} />
+                                            <span>Add Word</span>
                                           </button>
                                         </div>
 
-                                        {/* Words List */}
-                                        {lesson.words.length > 0 && (
+                                        {/* Sections as Accordions */}
+                                        {getLessonSections(lesson).length >
+                                        0 ? (
                                           <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                              <h4 className="font-medium text-gray-900 dark:text-white">
-                                                Current Words (
-                                                {lesson.words.length})
-                                              </h4>
-                                              <button
-                                                onClick={() => {
-                                                  setAddWordLessonId(lesson.id)
-                                                  setShowAddWordModal(true)
-                                                }}
-                                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
-                                              >
-                                                <FaPlus size={12} />
-                                                <span>Add Word</span>
-                                              </button>
-                                            </div>
-                                            <div className="grid gap-2 md:grid-cols-2">
-                                              {lesson.words.map((word) => (
-                                                <div
-                                                  key={word.id}
-                                                  className="p-2 bg-gray-100 dark:bg-gray-600 rounded text-sm"
-                                                >
-                                                  {editingWord === word.id ? (
-                                                    <div className="space-y-2">
-                                                      <div className="flex space-x-2">
-                                                        <input
-                                                          type="text"
-                                                          value={
-                                                            editWordData.en
-                                                          }
-                                                          onChange={(e) =>
-                                                            setEditWordData({
-                                                              ...editWordData,
-                                                              en: e.target
-                                                                .value,
-                                                            })
-                                                          }
-                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                          placeholder="English"
-                                                        />
-                                                        <input
-                                                          type="text"
-                                                          value={
-                                                            editWordData.ar
-                                                          }
-                                                          onChange={(e) =>
-                                                            setEditWordData({
-                                                              ...editWordData,
-                                                              ar: e.target
-                                                                .value,
-                                                            })
-                                                          }
-                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                          placeholder="Arabic"
-                                                          dir="rtl"
-                                                        />
-                                                      </div>
-                                                      <div className="flex space-x-2">
-                                                        <input
-                                                          type="text"
-                                                          value={
-                                                            editWordData.part
-                                                          }
-                                                          onChange={(e) =>
-                                                            setEditWordData({
-                                                              ...editWordData,
-                                                              part: e.target
-                                                                .value,
-                                                            })
-                                                          }
-                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                          placeholder="Part of speech"
-                                                        />
-                                                        <select
-                                                          value={
-                                                            editWordData.category
-                                                          }
-                                                          onChange={(e) =>
-                                                            setEditWordData({
-                                                              ...editWordData,
-                                                              category:
-                                                                e.target.value,
-                                                            })
-                                                          }
-                                                          className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                          title="Select category"
-                                                        >
-                                                          <option value="key">
-                                                            Key
-                                                          </option>
-                                                          <option value="additional">
-                                                            Additional
-                                                          </option>
-                                                        </select>
-                                                      </div>
-                                                      <div className="flex justify-end space-x-1">
-                                                        <button
-                                                          onClick={() =>
-                                                            saveEditWord(
-                                                              word.id
-                                                            )
-                                                          }
-                                                          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900"
-                                                          title="Save changes"
-                                                        >
-                                                          <FaSave size={12} />
-                                                        </button>
-                                                        <button
-                                                          onClick={
-                                                            cancelEditWord
-                                                          }
-                                                          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors p-1 rounded hover:bg-gray-50 dark:hover:bg-gray-900"
-                                                          title="Cancel editing"
-                                                        >
-                                                          <FaTimes size={12} />
-                                                        </button>
-                                                      </div>
-                                                    </div>
-                                                  ) : (
-                                                    <div className="flex justify-between items-start">
-                                                      <div className="flex-1">
-                                                        <span className="font-medium text-gray-900 dark:text-white">
-                                                          {word.en}
-                                                        </span>
-                                                        <span className="text-gray-600 dark:text-gray-400 mx-2">
-                                                          -
-                                                        </span>
+                                            {getLessonSections(lesson).map(
+                                              (sectionName, sectionIndex) => {
+                                                const sectionWords =
+                                                  lesson.words.filter(
+                                                    (word) =>
+                                                      word.category ===
+                                                      sectionName
+                                                  )
+
+                                                const sectionKey = `${lesson.id}-${sectionName}`
+                                                const isExpanded =
+                                                  expandedSections.has(
+                                                    sectionKey
+                                                  )
+
+                                                return (
+                                                  <div
+                                                    key={sectionKey}
+                                                    className="border border-gray-200 dark:border-gray-600 rounded-lg"
+                                                  >
+                                                    <button
+                                                      onClick={() =>
+                                                        toggleSection(
+                                                          sectionKey
+                                                        )
+                                                      }
+                                                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg"
+                                                    >
+                                                      <div className="flex items-center space-x-2">
+                                                        {isExpanded ? (
+                                                          <FaChevronDown
+                                                            className="text-gray-500"
+                                                            size={12}
+                                                          />
+                                                        ) : (
+                                                          <FaChevronRight
+                                                            className="text-gray-500"
+                                                            size={12}
+                                                          />
+                                                        )}
                                                         <span
-                                                          className="text-gray-700 dark:text-gray-300"
-                                                          dir="rtl"
+                                                          className={`text-sm font-medium px-2 py-1 rounded-md ${getSectionColor(
+                                                            sectionIndex
+                                                          )}`}
                                                         >
-                                                          {word.ar}
+                                                          {sectionName} (
+                                                          {sectionWords.length})
                                                         </span>
                                                       </div>
-                                                      <div className="flex items-center space-x-1">
-                                                        <span
-                                                          className={`px-2 py-1 rounded text-xs font-medium ${
-                                                            word.category ===
-                                                            "key"
-                                                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                                              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                          }`}
-                                                        >
-                                                          {word.part}
-                                                        </span>
-                                                        <button
-                                                          onClick={() =>
-                                                            startEditWord(word)
-                                                          }
-                                                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900"
-                                                          title="Edit word"
-                                                          aria-label={`Edit word ${word.en}`}
-                                                        >
-                                                          <FaEdit size={12} />
-                                                        </button>
-                                                        <button
-                                                          onClick={() =>
-                                                            setShowDeleteConfirm(
-                                                              {
-                                                                type: "word",
-                                                                id: word.id,
-                                                                name: word.en,
-                                                              }
-                                                            )
-                                                          }
-                                                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900"
-                                                          title="Delete word"
-                                                          aria-label={`Delete word ${word.en}`}
-                                                        >
-                                                          <FaTrash size={12} />
-                                                        </button>
+                                                    </button>
+
+                                                    {isExpanded && (
+                                                      <div className="px-3 pb-3">
+                                                        {sectionWords.length >
+                                                        0 ? (
+                                                          <div className="grid gap-2 md:grid-cols-2">
+                                                            {sectionWords.map(
+                                                              (word) => (
+                                                                <div
+                                                                  key={word.id}
+                                                                  className="p-2 bg-gray-100 dark:bg-gray-600 rounded text-sm"
+                                                                >
+                                                                  {editingWord ===
+                                                                  word.id ? (
+                                                                    <div className="space-y-2">
+                                                                      <div className="flex space-x-2">
+                                                                        <input
+                                                                          type="text"
+                                                                          value={
+                                                                            editWordData.en
+                                                                          }
+                                                                          onChange={(
+                                                                            e
+                                                                          ) =>
+                                                                            setEditWordData(
+                                                                              {
+                                                                                ...editWordData,
+                                                                                en: e
+                                                                                  .target
+                                                                                  .value,
+                                                                              }
+                                                                            )
+                                                                          }
+                                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                                          placeholder="English"
+                                                                        />
+                                                                        <input
+                                                                          type="text"
+                                                                          value={
+                                                                            editWordData.ar
+                                                                          }
+                                                                          onChange={(
+                                                                            e
+                                                                          ) =>
+                                                                            setEditWordData(
+                                                                              {
+                                                                                ...editWordData,
+                                                                                ar: e
+                                                                                  .target
+                                                                                  .value,
+                                                                              }
+                                                                            )
+                                                                          }
+                                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                                          placeholder="Arabic"
+                                                                          dir="rtl"
+                                                                        />
+                                                                      </div>
+                                                                      <div className="flex space-x-2">
+                                                                        <input
+                                                                          type="text"
+                                                                          value={
+                                                                            editWordData.part
+                                                                          }
+                                                                          onChange={(
+                                                                            e
+                                                                          ) =>
+                                                                            setEditWordData(
+                                                                              {
+                                                                                ...editWordData,
+                                                                                part: e
+                                                                                  .target
+                                                                                  .value,
+                                                                              }
+                                                                            )
+                                                                          }
+                                                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                                          placeholder="Part of speech"
+                                                                        />
+                                                                        <select
+                                                                          value={
+                                                                            editWordData.category
+                                                                          }
+                                                                          onChange={(
+                                                                            e
+                                                                          ) =>
+                                                                            setEditWordData(
+                                                                              {
+                                                                                ...editWordData,
+                                                                                category:
+                                                                                  e
+                                                                                    .target
+                                                                                    .value,
+                                                                              }
+                                                                            )
+                                                                          }
+                                                                          className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                                          title="Select category"
+                                                                        >
+                                                                          {getLessonSections(
+                                                                            lesson
+                                                                          ).map(
+                                                                            (
+                                                                              section,
+                                                                              index
+                                                                            ) => (
+                                                                              <option
+                                                                                key={
+                                                                                  index
+                                                                                }
+                                                                                value={
+                                                                                  section
+                                                                                }
+                                                                              >
+                                                                                {
+                                                                                  section
+                                                                                }
+                                                                              </option>
+                                                                            )
+                                                                          )}
+                                                                        </select>
+                                                                      </div>
+                                                                      <div className="flex justify-end space-x-1">
+                                                                        <button
+                                                                          onClick={() =>
+                                                                            saveEditWord(
+                                                                              word.id
+                                                                            )
+                                                                          }
+                                                                          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900"
+                                                                          title="Save changes"
+                                                                        >
+                                                                          <FaSave
+                                                                            size={
+                                                                              12
+                                                                            }
+                                                                          />
+                                                                        </button>
+                                                                        <button
+                                                                          onClick={
+                                                                            cancelEditWord
+                                                                          }
+                                                                          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors p-1 rounded hover:bg-gray-50 dark:hover:bg-gray-900"
+                                                                          title="Cancel editing"
+                                                                        >
+                                                                          <FaTimes
+                                                                            size={
+                                                                              12
+                                                                            }
+                                                                          />
+                                                                        </button>
+                                                                      </div>
+                                                                    </div>
+                                                                  ) : (
+                                                                    <div className="flex justify-between items-start">
+                                                                      <div className="flex-1">
+                                                                        <span className="font-medium text-gray-900 dark:text-white">
+                                                                          {
+                                                                            word.en
+                                                                          }
+                                                                        </span>
+                                                                        <span className="text-gray-600 dark:text-gray-400 mx-2">
+                                                                          -
+                                                                        </span>
+                                                                        <span
+                                                                          className="text-gray-700 dark:text-gray-300"
+                                                                          dir="rtl"
+                                                                        >
+                                                                          {
+                                                                            word.ar
+                                                                          }
+                                                                        </span>
+                                                                      </div>
+                                                                      <div className="flex items-center space-x-1">
+                                                                        <span
+                                                                          className={`px-2 py-1 rounded text-xs font-medium ${
+                                                                            word.category ===
+                                                                            "key"
+                                                                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                                              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                          }`}
+                                                                        >
+                                                                          {
+                                                                            word.part
+                                                                          }
+                                                                        </span>
+                                                                        <button
+                                                                          onClick={() =>
+                                                                            startEditWord(
+                                                                              word
+                                                                            )
+                                                                          }
+                                                                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900"
+                                                                          title="Edit word"
+                                                                          aria-label={`Edit word ${word.en}`}
+                                                                        >
+                                                                          <FaEdit
+                                                                            size={
+                                                                              12
+                                                                            }
+                                                                          />
+                                                                        </button>
+                                                                        <button
+                                                                          onClick={() =>
+                                                                            setShowDeleteConfirm(
+                                                                              {
+                                                                                type: "word",
+                                                                                id: word.id,
+                                                                                name: word.en,
+                                                                              }
+                                                                            )
+                                                                          }
+                                                                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900"
+                                                                          title="Delete word"
+                                                                          aria-label={`Delete word ${word.en}`}
+                                                                        >
+                                                                          <FaTrash
+                                                                            size={
+                                                                              12
+                                                                            }
+                                                                          />
+                                                                        </button>
+                                                                      </div>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              )
+                                                            )}
+                                                          </div>
+                                                        ) : (
+                                                          <p className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
+                                                            No words in this
+                                                            section yet.
+                                                          </p>
+                                                        )}
                                                       </div>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              ))}
-                                            </div>
+                                                    )}
+                                                  </div>
+                                                )
+                                              }
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                            <p>
+                                              No words added yet. Click
+                                              &quot;Add Word&quot; or &quot;Add
+                                              Bulk Words&quot; to get started.
+                                            </p>
                                           </div>
                                         )}
                                       </div>
@@ -1304,6 +1618,349 @@ export function TeacherDashboard() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Bulk Words Modal */}
+        {showBulkWordsModal && bulkWordsLessonId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 max-w-2xl w-full mx-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Add Bulk Words (JSON Format)
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Paste JSON with words grouped by sections:
+                  </label>
+                  <textarea
+                    value={wordsJson}
+                    onChange={(e) => setWordsJson(e.target.value)}
+                    placeholder={`{
+  "Key Words": [
+    { "en": "awkward", "ar": "مُحرِج/غير مُريح", "part": "adj" },
+    { "en": "laughter", "ar": "ضِحك", "part": "n" }
+  ],
+  "Additional Words": [
+    { "en": "absence", "ar": "غياب", "part": "n" },
+    { "en": "physically", "ar": "جسدياً", "part": "adv" }
+  ]
+}`}
+                    className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Use section names as keys. Each section should contain an
+                    array of word objects with &quot;en&quot;, &quot;ar&quot;,
+                    and &quot;part&quot; fields.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex space-x-4 mt-6">
+                <button
+                  onClick={() => {
+                    setShowBulkWordsModal(false)
+                    setBulkWordsLessonId(null)
+                    setWordsJson("")
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => addWords(bulkWordsLessonId)}
+                  disabled={
+                    !wordsJson.trim() ||
+                    addingWordsToLesson === bulkWordsLessonId
+                  }
+                  className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  {addingWordsToLesson === bulkWordsLessonId ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : (
+                    <FaPlus />
+                  )}
+                  <span>Add Words</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section Management Modal */}
+        {showSectionModal && selectedLessonId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Manage Sections
+              </h3>
+
+              <div className="space-y-4">
+                {(() => {
+                  const lesson = levels
+                    .flatMap((l) => l.units)
+                    .flatMap((u) => u.lessons)
+                    .find((lesson) => lesson.id === selectedLessonId)
+                  if (!lesson) return null
+
+                  const sections = getLessonSections(lesson)
+
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Current Sections:
+                        </label>
+                        {sections.map((section, index) => (
+                          <div
+                            key={index}
+                            className={`flex items-center justify-between px-3 py-2 rounded-md text-sm ${getSectionColor(
+                              index
+                            )}`}
+                          >
+                            {editingSectionIndex === index ? (
+                              <input
+                                type="text"
+                                value={editSectionName}
+                                onChange={(e) =>
+                                  setEditSectionName(e.target.value)
+                                }
+                                className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white mr-2"
+                                placeholder="Section name"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    // Save on Enter
+                                    if (!editSectionName.trim()) return
+
+                                    const oldName = section
+                                    const newName = editSectionName.trim()
+
+                                    if (oldName === newName) {
+                                      setEditingSectionIndex(null)
+                                      return
+                                    }
+
+                                    fetch(
+                                      `/api/lessons/${selectedLessonId}/sections`,
+                                      {
+                                        method: "PUT",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({
+                                          oldSectionName: oldName,
+                                          newSectionName: newName,
+                                        }),
+                                      }
+                                    )
+                                      .then((res) => res.json())
+                                      .then(() => {
+                                        fetchLevels()
+                                        setEditingSectionIndex(null)
+                                      })
+                                      .catch((error) => {
+                                        console.error(
+                                          "Error updating section:",
+                                          error
+                                        )
+                                      })
+                                  } else if (e.key === "Escape") {
+                                    // Cancel on Escape
+                                    setEditingSectionIndex(null)
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span>{section}</span>
+                            )}
+
+                            <div className="flex space-x-2">
+                              {editingSectionIndex === index ? (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      if (!editSectionName.trim()) return
+
+                                      const oldName = section
+                                      const newName = editSectionName.trim()
+
+                                      if (oldName === newName) {
+                                        setEditingSectionIndex(null)
+                                        return
+                                      }
+
+                                      fetch(
+                                        `/api/lessons/${selectedLessonId}/sections`,
+                                        {
+                                          method: "PUT",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          body: JSON.stringify({
+                                            oldSectionName: oldName,
+                                            newSectionName: newName,
+                                          }),
+                                        }
+                                      )
+                                        .then((res) => res.json())
+                                        .then(() => {
+                                          fetchLevels()
+                                          setEditingSectionIndex(null)
+                                        })
+                                        .catch((error) => {
+                                          console.error(
+                                            "Error updating section:",
+                                            error
+                                          )
+                                        })
+                                    }}
+                                    className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors"
+                                    title="Save"
+                                  >
+                                    <FaSave size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingSectionIndex(null)
+                                    }}
+                                    className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 transition-colors"
+                                    title="Cancel"
+                                  >
+                                    <FaTimes size={12} />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingSectionIndex(index)
+                                      setEditSectionName(section)
+                                    }}
+                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                                    title="Edit section"
+                                  >
+                                    <FaEdit size={12} />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        !confirm(
+                                          `Delete section "${section}"? Words in this section will be moved to "${sections[0]}".`
+                                        )
+                                      )
+                                        return
+
+                                      try {
+                                        const response = await fetch(
+                                          `/api/lessons/${selectedLessonId}/sections`,
+                                          {
+                                            method: "DELETE",
+                                            headers: {
+                                              "Content-Type":
+                                                "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                              sectionName: section,
+                                            }),
+                                          }
+                                        )
+
+                                        if (response.ok) {
+                                          await fetchLevels()
+                                        }
+                                      } catch (error) {
+                                        console.error(
+                                          "Error deleting section:",
+                                          error
+                                        )
+                                      }
+                                    }}
+                                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                                    title="Delete section"
+                                  >
+                                    <FaTrash size={12} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Add New Section:
+                        </label>
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={newSectionName}
+                            onChange={(e) => setNewSectionName(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="Section name"
+                          />
+                          <button
+                            onClick={async () => {
+                              if (!newSectionName.trim()) return
+
+                              setIsAddingSection(true)
+                              try {
+                                const response = await fetch(
+                                  `/api/lessons/${selectedLessonId}/sections`,
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      sectionName: newSectionName.trim(),
+                                    }),
+                                  }
+                                )
+
+                                if (response.ok) {
+                                  await fetchLevels()
+                                  setNewSectionName("")
+                                }
+                              } catch (error) {
+                                console.error("Error adding section:", error)
+                              } finally {
+                                setIsAddingSection(false)
+                              }
+                            }}
+                            disabled={isAddingSection || !newSectionName.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-3 py-2 rounded-md text-sm transition-colors"
+                          >
+                            {isAddingSection ? (
+                              <FaSpinner className="animate-spin" size={12} />
+                            ) : (
+                              <FaPlus size={12} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowSectionModal(false)
+                    setSelectedLessonId(null)
+                    setNewSectionName("")
+                    setEditingSectionIndex(null)
+                    setEditSectionName("")
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
