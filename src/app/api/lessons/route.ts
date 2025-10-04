@@ -22,10 +22,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 })
     }
 
+    // Get the max order for lessons in this unit and add 1
+    const maxOrderLesson = await prisma.lesson.findFirst({
+      where: { unitId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    })
+    const nextOrder = (maxOrderLesson?.order ?? -1) + 1
+
     const lesson = await prisma.lesson.create({
       data: {
         name,
         unitId,
+        order: nextOrder,
       },
     })
 

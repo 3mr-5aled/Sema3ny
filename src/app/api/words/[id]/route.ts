@@ -9,7 +9,7 @@ export async function PUT(
   try {
     const { id } = await params
     const wordId = parseInt(id)
-    const { en, ar, part, category } = await request.json()
+    const { en, ar, part, category, order } = await request.json()
 
     if (isNaN(wordId)) {
       return NextResponse.json({ error: "Invalid word ID" }, { status: 400 })
@@ -22,9 +22,20 @@ export async function PUT(
       )
     }
 
+    const updateData: {
+      en: string
+      ar: string
+      part: string
+      category: string
+      order?: number
+    } = { en, ar, part, category }
+    if (typeof order === "number") {
+      updateData.order = order
+    }
+
     const word = await prisma.word.update({
       where: { id: wordId },
-      data: { en, ar, part, category },
+      data: updateData,
     })
 
     return NextResponse.json(word)

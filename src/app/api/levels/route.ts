@@ -10,13 +10,17 @@ export async function GET() {
           include: {
             lessons: {
               include: {
-                words: true,
+                words: {
+                  orderBy: { order: "asc" },
+                },
               },
+              orderBy: { order: "asc" },
             },
           },
+          orderBy: { order: "asc" },
         },
       },
-      orderBy: { id: "asc" },
+      orderBy: { order: "asc" },
     })
 
     return NextResponse.json(levels)
@@ -38,8 +42,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
+    // Get the max order and add 1 for the new level
+    const maxOrderLevel = await prisma.studyLevel.findFirst({
+      orderBy: { order: "desc" },
+      select: { order: true },
+    })
+    const nextOrder = (maxOrderLevel?.order ?? -1) + 1
+
     const level = await prisma.studyLevel.create({
-      data: { name },
+      data: { name, order: nextOrder },
     })
 
     return NextResponse.json(level, { status: 201 })

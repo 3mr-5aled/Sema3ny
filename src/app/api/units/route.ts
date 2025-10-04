@@ -25,10 +25,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get the max order for units in this level and add 1
+    const maxOrderUnit = await prisma.unit.findFirst({
+      where: { gradeId: studyLevelId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    })
+    const nextOrder = (maxOrderUnit?.order ?? -1) + 1
+
     const unit = await prisma.unit.create({
       data: {
         name,
         gradeId: studyLevelId,
+        order: nextOrder,
       },
     })
 

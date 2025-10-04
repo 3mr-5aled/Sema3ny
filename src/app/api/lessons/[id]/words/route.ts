@@ -63,6 +63,14 @@ export async function POST(
       })
     }
 
+    // Get the max order for words in this lesson to start numbering
+    const maxOrderWord = await prisma.word.findFirst({
+      where: { lessonId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    })
+    let nextOrder = (maxOrderWord?.order ?? -1) + 1
+
     const wordsToCreate = []
 
     // Process each section
@@ -89,6 +97,7 @@ export async function POST(
           part: word.part,
           category: sectionName,
           lessonId,
+          order: nextOrder++,
         })
       }
     }

@@ -9,7 +9,7 @@ export async function PUT(
   try {
     const { id } = await params
     const lessonId = parseInt(id)
-    const { name } = await request.json()
+    const { name, order, sections } = await request.json()
 
     if (isNaN(lessonId)) {
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
@@ -19,9 +19,19 @@ export async function PUT(
       return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
+    const updateData: { name: string; order?: number; sections?: string } = {
+      name,
+    }
+    if (typeof order === "number") {
+      updateData.order = order
+    }
+    if (typeof sections === "string") {
+      updateData.sections = sections
+    }
+
     const lesson = await prisma.lesson.update({
       where: { id: lessonId },
-      data: { name },
+      data: updateData,
     })
 
     return NextResponse.json(lesson)

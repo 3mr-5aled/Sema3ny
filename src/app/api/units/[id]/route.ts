@@ -9,7 +9,7 @@ export async function PUT(
   try {
     const { id } = await params
     const unitId = parseInt(id)
-    const { name } = await request.json()
+    const { name, order } = await request.json()
 
     if (isNaN(unitId)) {
       return NextResponse.json({ error: "Invalid unit ID" }, { status: 400 })
@@ -19,9 +19,14 @@ export async function PUT(
       return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
+    const updateData: { name: string; order?: number } = { name }
+    if (typeof order === "number") {
+      updateData.order = order
+    }
+
     const unit = await prisma.unit.update({
       where: { id: unitId },
-      data: { name },
+      data: updateData,
     })
 
     return NextResponse.json(unit)
