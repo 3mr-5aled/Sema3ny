@@ -6,7 +6,10 @@ export function middleware(request: NextRequest) {
 
   // Allow public routes
   const publicPaths = [
+    "/",
     "/login",
+    "/levels",
+    "/dashboard",
     "/api/auth",
     "/api/levels",
     "/api/units",
@@ -31,8 +34,9 @@ export function middleware(request: NextRequest) {
   }
 
   // For protected routes, check session cookie
-  const sessionCookie = request.cookies.get("authjs.session-token") || 
-                        request.cookies.get("__Secure-authjs.session-token")
+  const sessionCookie =
+    request.cookies.get("authjs.session-token") ||
+    request.cookies.get("__Secure-authjs.session-token")
 
   // Protect /admin routes
   if (pathname.startsWith("/admin")) {

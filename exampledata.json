@@ -1,0 +1,66 @@
+{
+  "Key Words": [
+    { "en": "accomplish", "ar": "يُنجِز", "part": "verb" },
+    { "en": "achievement", "ar": "إنجاز", "part": "noun" },
+    { "en": "challenge", "ar": "تحدي", "part": "noun" },
+    { "en": "confident", "ar": "واثق", "part": "adjective" },
+    { "en": "develop", "ar": "يُطوِّر", "part": "verb" },
+    { "en": "environment", "ar": "بيئة", "part": "noun" },
+    { "en": "essential", "ar": "أساسي/جوهري", "part": "adjective" },
+    { "en": "experience", "ar": "خبرة/تجربة", "part": "noun" },
+    { "en": "knowledge", "ar": "معرفة", "part": "noun" },
+    { "en": "opportunity", "ar": "فرصة", "part": "noun" },
+    { "en": "participate", "ar": "يُشارِك", "part": "verb" },
+    { "en": "positive", "ar": "إيجابي", "part": "adjective" },
+    { "en": "success", "ar": "نجاح", "part": "noun" },
+    { "en": "understand", "ar": "يَفهَم", "part": "verb" }
+  ],
+  "Additional Words": [
+    { "en": "absence", "ar": "غياب", "part": "noun" },
+    { "en": "accurately", "ar": "بدقة", "part": "adverb" },
+    { "en": "approach", "ar": "منهج/طريقة", "part": "noun" },
+    { "en": "communicate", "ar": "يتواصل", "part": "verb" },
+    { "en": "contribute", "ar": "يُساهِم", "part": "verb" },
+    { "en": "creative", "ar": "مُبدِع", "part": "adjective" },
+    { "en": "efficiently", "ar": "بكفاءة", "part": "adverb" },
+    { "en": "focus", "ar": "تركيز", "part": "noun" },
+    { "en": "improve", "ar": "يُحسِّن", "part": "verb" },
+    { "en": "information", "ar": "معلومات", "part": "noun" },
+    { "en": "organize", "ar": "يُنظِّم", "part": "verb" },
+    { "en": "perspective", "ar": "منظور", "part": "noun" },
+    { "en": "practical", "ar": "عملي", "part": "adjective" },
+    { "en": "responsibility", "ar": "مسؤولية", "part": "noun" },
+    { "en": "strategy", "ar": "استراتيجية", "part": "noun" }
+  ],
+  "Verbs": [
+    { "en": "achieve", "ar": "يُحقِّق", "part": "verb" },
+    { "en": "analyze", "ar": "يُحلِّل", "part": "verb" },
+    { "en": "appreciate", "ar": "يُقدِّر", "part": "verb" },
+    { "en": "collaborate", "ar": "يتعاون", "part": "verb" },
+    { "en": "demonstrate", "ar": "يُظهِر/يُبرهِن", "part": "verb" },
+    { "en": "evaluate", "ar": "يُقيِّم", "part": "verb" },
+    { "en": "implement", "ar": "يُنفِّذ", "part": "verb" },
+    { "en": "investigate", "ar": "يُحقِّق/يَبحَث", "part": "verb" },
+    { "en": "maintain", "ar": "يُحافِظ على", "part": "verb" },
+    { "en": "recognize", "ar": "يُدرِك/يَعتَرِف", "part": "verb" }
+  ],
+  "Adjectives": [
+    { "en": "beneficial", "ar": "مُفيد", "part": "adjective" },
+    { "en": "crucial", "ar": "حاسم/مهم جداً", "part": "adjective" },
+    { "en": "effective", "ar": "فعّال", "part": "adjective" },
+    { "en": "flexible", "ar": "مرن", "part": "adjective" },
+    { "en": "independent", "ar": "مُستقِل", "part": "adjective" },
+    { "en": "reliable", "ar": "موثوق", "part": "adjective" },
+    { "en": "significant", "ar": "مُهِم/ذو أهمية", "part": "adjective" },
+    { "en": "valuable", "ar": "قيِّم", "part": "adjective" }
+  ],
+  "Expressions": [
+    { "en": "as a result", "ar": "نتيجة لذلك", "part": "other" },
+    { "en": "deal with", "ar": "يتعامل مع", "part": "other" },
+    { "en": "for instance", "ar": "على سبيل المثال", "part": "other" },
+    { "en": "in addition", "ar": "بالإضافة إلى ذلك", "part": "other" },
+    { "en": "on the other hand", "ar": "من ناحية أخرى", "part": "other" },
+    { "en": "point of view", "ar": "وجهة نظر", "part": "other" },
+    { "en": "take into account", "ar": "يأخذ في الاعتبار", "part": "other" }
+  ]
+}
