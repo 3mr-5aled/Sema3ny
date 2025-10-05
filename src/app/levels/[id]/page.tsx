@@ -37,7 +37,7 @@ async function getStudyLevel(id: string): Promise<StudyLevel | null> {
       : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
 
     const response = await fetch(`${baseUrl}/api/levels`, {
-      cache: "no-store",
+      next: { revalidate: 3600 }, // Cache for 1 hour
     })
 
     if (!response.ok) {
@@ -60,7 +60,7 @@ export async function generateStaticParams() {
       : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
 
     const response = await fetch(`${baseUrl}/api/levels`, {
-      cache: "no-store",
+      next: { revalidate: 3600 }, // Cache for 1 hour
     })
 
     if (!response.ok) {
