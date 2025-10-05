@@ -1,36 +1,67 @@
-import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Allow public routes
+  const publicPaths = [
+    "/login",
+    "/api/auth",
+    "/api/levels",
+    "/api/units",
+    "/api/lessons",
+    "/api/words",
+    "/offline",
+    "/_next",
+    "/favicon.ico",
+    "/logo.svg",
+    "/manifest.json",
+    "/service-worker.js",
+  ]
+
+  // Check if current path is public (GET requests for read-only data)
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
+  const isReadOnlyApiRequest =
+    pathname.startsWith("/api/") && request.method === "GET"
+
+  // Allow public paths and read-only API requests
+  if (isPublicPath || isReadOnlyApiRequest) {
+    return NextResponse.next()
+  }
+
+  // For protected routes, check session cookie
+  const sessionCookie = request.cookies.get("authjs.session-token") || 
+                        request.cookies.get("__Secure-authjs.session-token")
 
   // Protect /admin routes
   if (pathname.startsWith("/admin")) {
-    if (!req.auth) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL("/login", req.url))
+    if (!sessionCookie) {
+      return NextResponse.redirect(new URL("/login", request.url))
     }
   }
 
-  // Protect write API routes (POST, PUT, DELETE, PATCH)
+  // Protect write API operations
   if (pathname.startsWith("/api/")) {
-    const method = req.method
-    const isWriteOperation = ["POST", "PUT", "DELETE", "PATCH"].includes(method)
-
-    if (isWriteOperation && !req.auth) {
+    const isWriteOperation = ["POST", "PUT", "DELETE", "PATCH"].includes(
+      request.method
+    )
+    if (isWriteOperation && !sessionCookie) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
   }
 
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [
-    "/admin/:path*",
-    "/api/levels/:path*",
-    "/api/units/:path*",
-    "/api/lessons/:path*",
-    "/api/words/:path*",
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 }
