@@ -1,4 +1,4 @@
-# Mr Khaled Morcy - English Vocabulary Guide
+# Sema3ny - English Vocabulary Guide
 
 A full-stack English teaching web application with CMS functionality, built for English teachers to manage vocabulary lessons and students to practice with interactive word cards.
 
@@ -159,8 +159,51 @@ npm run dev
 
 This project is created for educational purposes.
 
-## Deploy on Vercel
+## 🚀 Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is production-ready and can be deployed to various platforms.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Quick Deploy to Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy to production
+vercel --prod
+```
+
+**Detailed Guides:**
+- 📘 **Quick Start**: See [`QUICK_DEPLOY.md`](./QUICK_DEPLOY.md) (15 min setup)
+- 📖 **Complete Guide**: See [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md) (all platforms)
+- ✅ **Ready Check**: See [`DEPLOYMENT_READY.md`](./DEPLOYMENT_READY.md) (status)
+
+### Other Deployment Options
+- **Docker**: Use included `Dockerfile` and `docker-compose.yml`
+- **Netlify**: Deploy with one click
+- **Railway**: Automated PostgreSQL setup
+- **Self-hosted**: Full instructions in deployment guide
+
+### Pre-Deployment Checklist
+1. Generate app icons (see `ICON_TODO.md`)
+2. Set up production database (PostgreSQL)
+3. Configure environment variables
+4. Run `npm run build` to verify
+5. Follow platform-specific guide
+
+**Production Features:**
+- ✅ PWA support (installable on mobile)
+- ✅ Offline mode with service worker
+- ✅ Automatic HTTPS
+- ✅ Global CDN
+- ✅ Health check endpoint
+- ✅ Database migrations
+- ✅ Error tracking ready
+
+## 📚 Documentation
+
+- [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md) - Complete deployment guide
+- [`QUICK_DEPLOY.md`](./QUICK_DEPLOY.md) - Quick start deployment
+- [`PWA_GUIDE.md`](./PWA_GUIDE.md) - Progressive Web App features
+- [`ICON_TODO.md`](./ICON_TODO.md) - Icon generation instructions
+- [`API_CLIENT_GUIDE.md`](./API_CLIENT_GUIDE.md) - API usage guide

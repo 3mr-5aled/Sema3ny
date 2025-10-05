@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { FaGraduationCap } from "react-icons/fa"
+import Image from "next/image"
 
 export function Navbar() {
   return (
@@ -10,9 +10,15 @@ export function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <FaGraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <Image
+                src="/logo.svg"
+                alt="Sema3ny Logo"
+                width={40}
+                height={40}
+                className="h-10 w-10"
+              />
               <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Mr Khaled Morcy
+                Sema3ny
               </span>
             </Link>
           </div>

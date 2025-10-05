@@ -20,6 +20,11 @@ import {
 } from "react-icons/fa"
 import { ToastContainer, type ToastMessage } from "./Toast"
 import {
+  validateName,
+  validateNoDuplicates,
+  validateWord,
+} from "../lib/validation"
+import {
   DndContext,
   closestCenter,
   KeyboardSensor,
@@ -649,8 +654,30 @@ export function TeacherDashboard() {
   }
 
   const createLevel = async () => {
-    if (!newLevelName.trim()) {
-      showToast("error", "Validation Error", "Please enter a level name")
+    // Validate name format
+    const nameValidation = validateName(newLevelName)
+    if (!nameValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        nameValidation.error || "Invalid level name"
+      )
+      return
+    }
+
+    // Check for duplicates
+    const existingNames = levels.map((level) => level.name)
+    const duplicateValidation = validateNoDuplicates(
+      newLevelName,
+      existingNames,
+      "study level"
+    )
+    if (!duplicateValidation.isValid) {
+      showToast(
+        "error",
+        "Duplicate Level",
+        duplicateValidation.error || "A level with this name already exists"
+      )
       return
     }
 
@@ -687,9 +714,35 @@ export function TeacherDashboard() {
   }
 
   const createUnit = async (studyLevelId: number) => {
-    if (!newUnitName.trim()) {
-      showToast("error", "Validation Error", "Please enter a unit name")
+    // Validate name format
+    const nameValidation = validateName(newUnitName)
+    if (!nameValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        nameValidation.error || "Invalid unit name"
+      )
       return
+    }
+
+    // Check for duplicates within this level
+    const level = levels.find((l) => l.id === studyLevelId)
+    if (level) {
+      const existingNames = level.units.map((unit) => unit.name)
+      const duplicateValidation = validateNoDuplicates(
+        newUnitName,
+        existingNames,
+        "unit"
+      )
+      if (!duplicateValidation.isValid) {
+        showToast(
+          "error",
+          "Duplicate Unit",
+          duplicateValidation.error ||
+            "A unit with this name already exists in this level"
+        )
+        return
+      }
     }
 
     setCreatingUnitForLevel(studyLevelId)
@@ -728,9 +781,35 @@ export function TeacherDashboard() {
   }
 
   const createLesson = async (unitId: number) => {
-    if (!newLessonName.trim()) {
-      showToast("error", "Validation Error", "Please enter a lesson name")
+    // Validate name format
+    const nameValidation = validateName(newLessonName)
+    if (!nameValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        nameValidation.error || "Invalid lesson name"
+      )
       return
+    }
+
+    // Check for duplicates within this unit
+    const unit = levels.flatMap((l) => l.units).find((u) => u.id === unitId)
+    if (unit) {
+      const existingNames = unit.lessons.map((lesson) => lesson.name)
+      const duplicateValidation = validateNoDuplicates(
+        newLessonName,
+        existingNames,
+        "lesson"
+      )
+      if (!duplicateValidation.isValid) {
+        showToast(
+          "error",
+          "Duplicate Lesson",
+          duplicateValidation.error ||
+            "A lesson with this name already exists in this unit"
+        )
+        return
+      }
     }
 
     setCreatingLessonForUnit(unitId)
@@ -785,6 +864,44 @@ export function TeacherDashboard() {
       // Validate payload structure
       if (typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("JSON must be an object with section names as keys")
+      }
+
+      // Validate each section and its words
+      for (const [sectionName, words] of Object.entries(payload)) {
+        // Validate section name
+        const sectionValidation = validateName(sectionName)
+        if (!sectionValidation.isValid) {
+          throw new Error(
+            `Section "${sectionName}": ${
+              sectionValidation.error || "Invalid section name"
+            }`
+          )
+        }
+
+        // Validate each word in the section
+        if (!Array.isArray(words) || words.length === 0) {
+          throw new Error(
+            `Section "${sectionName}" must contain at least one word`
+          )
+        }
+
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i]
+          const wordValidation = validateWord({
+            en: word.en || "",
+            ar: word.ar || "",
+            part: word.part || "",
+            category: sectionName, // Category is the section name
+          })
+
+          if (!wordValidation.isValid) {
+            throw new Error(
+              `Section "${sectionName}", Word ${i + 1}: ${
+                wordValidation.error || "Invalid word"
+              }`
+            )
+          }
+        }
       }
 
       const response = await fetch(`/api/lessons/${lessonId}/words`, {
@@ -1102,12 +1219,20 @@ export function TeacherDashboard() {
   }
 
   const saveEditWord = async (wordId: number) => {
-    if (
-      !editWordData.en.trim() ||
-      !editWordData.ar.trim() ||
-      !editWordData.part.trim()
-    ) {
-      showToast("error", "Validation Error", "Please fill in all fields")
+    // Validate the complete word object
+    const wordValidation = validateWord({
+      en: editWordData.en,
+      ar: editWordData.ar,
+      part: editWordData.part,
+      category: editWordData.category,
+    })
+
+    if (!wordValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        wordValidation.error || "Please check all fields"
+      )
       return
     }
 
@@ -1115,7 +1240,12 @@ export function TeacherDashboard() {
       const response = await fetch(`/api/words/${wordId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editWordData),
+        body: JSON.stringify({
+          en: editWordData.en.trim(),
+          ar: editWordData.ar.trim(),
+          part: editWordData.part,
+          category: editWordData.category.trim(),
+        }),
       })
 
       if (response.ok) {
@@ -1144,12 +1274,41 @@ export function TeacherDashboard() {
 
   // Section management functions
   const addSection = async () => {
-    if (!newSectionName.trim()) {
-      showToast("error", "Validation Error", "Please enter a section name")
+    // Validate section name
+    const nameValidation = validateName(newSectionName)
+    if (!nameValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        nameValidation.error || "Invalid section name"
+      )
       return
     }
 
     if (!selectedLessonId) return
+
+    // Check for duplicates
+    const lesson = levels
+      .flatMap((l) => l.units)
+      .flatMap((u) => u.lessons)
+      .find((lesson) => lesson.id === selectedLessonId)
+
+    if (lesson) {
+      const existingSections = getLessonSections(lesson)
+      const duplicateValidation = validateNoDuplicates(
+        newSectionName,
+        existingSections,
+        "section"
+      )
+      if (!duplicateValidation.isValid) {
+        showToast(
+          "error",
+          "Duplicate Section",
+          duplicateValidation.error || "A section with this name already exists"
+        )
+        return
+      }
+    }
 
     setIsAddingSection(true)
     try {
@@ -1187,13 +1346,44 @@ export function TeacherDashboard() {
   }
 
   const updateSection = async (oldName: string, newName: string) => {
-    if (!newName.trim()) {
-      showToast("error", "Validation Error", "Section name cannot be empty")
+    // Validate section name
+    const nameValidation = validateName(newName)
+    if (!nameValidation.isValid) {
+      showToast(
+        "error",
+        "Validation Error",
+        nameValidation.error || "Invalid section name"
+      )
       return false
     }
 
     if (oldName === newName) {
       return true
+    }
+
+    // Check for duplicates (excluding the current section being renamed)
+    const lesson = levels
+      .flatMap((l) => l.units)
+      .flatMap((u) => u.lessons)
+      .find((lesson) => lesson.id === selectedLessonId)
+
+    if (lesson) {
+      const existingSections = getLessonSections(lesson).filter(
+        (name) => name !== oldName
+      )
+      const duplicateValidation = validateNoDuplicates(
+        newName,
+        existingSections,
+        "section"
+      )
+      if (!duplicateValidation.isValid) {
+        showToast(
+          "error",
+          "Duplicate Section",
+          duplicateValidation.error || "A section with this name already exists"
+        )
+        return false
+      }
     }
 
     try {

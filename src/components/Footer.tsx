@@ -5,7 +5,10 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-center md:text-left">
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              <strong>Mr Khaled Morcy</strong> - English Vocabulary Guide
+              <strong>Sema3ny</strong> - English Vocabulary Guide
+            </p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
+              Teacher: <span className="font-medium">Mr Khaled Morcy</span>
             </p>
             <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
               Phone: 01023144722
@@ -29,7 +32,7 @@ export function Footer() {
 
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <p className="text-center text-gray-400 dark:text-gray-600 text-xs">
-            © {new Date().getFullYear()} Mr Khaled Morcy. All rights reserved.
+            © {new Date().getFullYear()} Sema3ny. All rights reserved.
           </p>
         </div>
       </div>

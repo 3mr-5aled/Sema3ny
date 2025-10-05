@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import {
+  validateName,
+  validateWord,
+  validatePartOfSpeech,
+} from "@/lib/validation"
 
 interface WordData {
   en: string
@@ -19,10 +24,19 @@ export async function POST(
   try {
     const { id } = await params
     const lessonId = parseInt(id)
-    const payload: WordsPayload = await request.json()
 
     if (isNaN(lessonId)) {
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
+    }
+
+    const payload: WordsPayload = await request.json()
+
+    // Validate payload is an object
+    if (typeof payload !== "object" || Array.isArray(payload) || !payload) {
+      return NextResponse.json(
+        { error: "Payload must be an object with section names as keys" },
+        { status: 400 }
+      )
     }
 
     // Verify lesson exists
@@ -43,6 +57,21 @@ export async function POST(
         },
         { status: 400 }
       )
+    }
+
+    // Validate each section name
+    for (const sectionName of sections) {
+      const sectionValidation = validateName(sectionName)
+      if (!sectionValidation.isValid) {
+        return NextResponse.json(
+          {
+            error: `Section "${sectionName}": ${
+              sectionValidation.error || "Invalid section name"
+            }`,
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Get existing sections from lesson
@@ -84,18 +113,81 @@ export async function POST(
         )
       }
 
-      for (const word of words) {
+      if (words.length === 0) {
+        return NextResponse.json(
+          { error: `Section "${sectionName}" must contain at least one word` },
+          { status: 400 }
+        )
+      }
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i]
+
+        // Validate required fields exist
         if (!word.en || !word.ar || !word.part) {
           return NextResponse.json(
-            { error: 'Each word must have "en", "ar", and "part" fields' },
+            {
+              error: `Section "${sectionName}", Word ${
+                i + 1
+              }: All fields (en, ar, part) are required`,
+            },
             { status: 400 }
           )
         }
-        wordsToCreate.push({
+
+        // Validate data types
+        if (
+          typeof word.en !== "string" ||
+          typeof word.ar !== "string" ||
+          typeof word.part !== "string"
+        ) {
+          return NextResponse.json(
+            {
+              error: `Section "${sectionName}", Word ${
+                i + 1
+              }: All fields must be strings`,
+            },
+            { status: 400 }
+          )
+        }
+
+        // Validate word using validation library
+        const wordValidation = validateWord({
           en: word.en,
           ar: word.ar,
           part: word.part,
           category: sectionName,
+        })
+
+        if (!wordValidation.isValid) {
+          return NextResponse.json(
+            {
+              error: `Section "${sectionName}", Word ${i + 1}: ${
+                wordValidation.error || "Invalid word"
+              }`,
+            },
+            { status: 400 }
+          )
+        }
+
+        // Additional validation for part of speech
+        const partValidation = validatePartOfSpeech(word.part)
+        if (!partValidation.isValid) {
+          return NextResponse.json(
+            {
+              error: `Section "${sectionName}", Word ${i + 1}: ${
+                partValidation.error || "Invalid part of speech"
+              }`,
+            },
+            { status: 400 }
+          )
+        }
+
+        wordsToCreate.push({
+          en: word.en.trim(),
+          ar: word.ar.trim(),
+          part: word.part,
+          category: sectionName.trim(),
           lessonId,
           order: nextOrder++,
         })
