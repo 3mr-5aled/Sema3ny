@@ -6,10 +6,7 @@ export function middleware(request: NextRequest) {
 
   // Allow public routes
   const publicPaths = [
-    "/",
     "/login",
-    "/levels",
-    "/dashboard",
     "/api/auth",
     "/api/levels",
     "/api/units",

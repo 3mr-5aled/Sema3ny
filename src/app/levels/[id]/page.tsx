@@ -31,8 +31,13 @@ interface StudyLevel {
 
 async function getStudyLevel(id: string): Promise<StudyLevel | null> {
   try {
+    // Use absolute URL in production, relative in development
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
+    
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/api/levels`,
+      `${baseUrl}/api/levels`,
       {
         cache: "no-store",
       }
