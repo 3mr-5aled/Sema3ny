@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { FaHome, FaBook, FaCompass } from "react-icons/fa"
+import { FaHome, FaBook } from "react-icons/fa"
 
 export default function NotFound() {
   return (
@@ -61,22 +61,14 @@ export default function NotFound() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        {/* Action button */}
+        <div className="flex justify-center">
           <Link
             href="/"
             className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
             <FaHome className="text-xl" />
             <span>Go Home</span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center space-x-2 px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-xl shadow-lg hover:shadow-xl border-2 border-purple-200 dark:border-purple-700 transform hover:scale-105 transition-all duration-200"
-          >
-            <FaCompass className="text-xl" />
-            <span>Browse Lessons</span>
           </Link>
         </div>
 
