@@ -66,6 +66,40 @@ async function getUnit(
   }
 }
 
+// Generate static params for all units at build time
+export async function generateStaticParams() {
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
+
+    const response = await fetch(`${baseUrl}/api/levels`, {
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    const levels: StudyLevel[] = await response.json()
+    const params: { id: string; unitId: string }[] = []
+
+    levels.forEach((level) => {
+      level.units.forEach((unit) => {
+        params.push({
+          id: level.id.toString(),
+          unitId: unit.id.toString(),
+        })
+      })
+    })
+
+    return params
+  } catch (error) {
+    console.error("Error generating static params:", error)
+    return []
+  }
+}
+
 export default async function UnitPage({
   params,
 }: {
