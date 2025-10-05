@@ -50,7 +50,10 @@ export default function NotFound() {
               <span className="font-bold text-purple-600 dark:text-purple-400">
                 Lost
               </span>{" "}
-              (adj.) - <span className="text-gray-600 dark:text-gray-400 arabic-text">ضائع</span>
+              (adj.) -{" "}
+              <span className="text-gray-600 dark:text-gray-400 arabic-text">
+                ضائع
+              </span>
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
               &quot;You&apos;re not lost, you&apos;re just exploring!&quot;
@@ -79,10 +82,12 @@ export default function NotFound() {
 
         {/* Fun fact */}
         <div className="mt-12 text-sm text-gray-500 dark:text-gray-400">
-          <p className="mb-2">💡 <strong>Fun Fact:</strong></p>
+          <p className="mb-2">
+            💡 <strong>Fun Fact:</strong>
+          </p>
           <p>
-            The HTTP 404 status code means &quot;Not Found&quot; - it&apos;s been helping us find
-            things that don&apos;t exist since 1992!
+            The HTTP 404 status code means &quot;Not Found&quot; - it&apos;s
+            been helping us find things that don&apos;t exist since 1992!
           </p>
         </div>
       </div>

@@ -36,16 +36,13 @@ async function getLesson(
 ): Promise<{ lesson: Lesson; unit: Unit; level: StudyLevel } | null> {
   try {
     // Use absolute URL in production, relative in development
-    const baseUrl = process.env.VERCEL_URL 
+    const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
-    
-    const response = await fetch(
-      `${baseUrl}/api/levels`,
-      {
-        cache: "no-store",
-      }
-    )
+
+    const response = await fetch(`${baseUrl}/api/levels`, {
+      cache: "no-store",
+    })
 
     if (!response.ok) {
       return null

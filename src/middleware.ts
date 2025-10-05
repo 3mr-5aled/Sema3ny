@@ -4,9 +4,12 @@ import type { NextRequest } from "next/server"
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public routes
+  // Allow public routes (student-facing pages and APIs)
   const publicPaths = [
+    "/",
     "/login",
+    "/dashboard",
+    "/levels",
     "/api/auth",
     "/api/levels",
     "/api/units",
