@@ -34,12 +34,13 @@ export const metadata: Metadata = {
     apple: [{ url: "/icon-192x192.png", sizes: "192x192", type: "image/png" }],
     shortcut: [{ url: "/logo.svg", type: "image/svg+xml" }],
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+}
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({
