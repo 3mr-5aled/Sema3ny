@@ -40,229 +40,185 @@ const partOfSpeechLabels = {
 
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
+  const [audioCache, setAudioCache] = useState<Map<string, HTMLAudioElement>>(new Map())
 
-  // Ensure voices are loaded (critical for mobile browsers)
+  // Detect if user is on mobile device
+  const isMobile = typeof window !== "undefined" && 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+  // Ensure voices are loaded (for desktop fallback)
   useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window && !isMobile) {
       const loadVoices = () => {
         const voices = speechSynthesis.getVoices()
         if (voices.length > 0) {
-          console.log(`Loaded ${voices.length} voices`)
+          console.log(`Loaded ${voices.length} voices for fallback`)
         }
       }
 
-      // Try loading immediately
       loadVoices()
-      
-      // Set up listener for when voices change (important for mobile)
       if (speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = loadVoices
       }
-
-      // Fallback: Try loading again after a short delay (for mobile browsers)
-      const timeout = setTimeout(loadVoices, 100)
-      
-      return () => clearTimeout(timeout)
     }
-  }, [])
+  }, [isMobile])
 
-  const speakWord = (
+  const speakWord = async (
     wordId: number,
     word: string,
     accent: "american" | "british"
   ) => {
-    if ("speechSynthesis" in window) {
-      // Cancel any ongoing speech
+    // Cancel any ongoing speech
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       speechSynthesis.cancel()
+    }
 
-      // Set loading state
-      setSpeakingWordId(`${wordId}-${accent}`)
+    // Set loading state
+    setSpeakingWordId(`${wordId}-${accent}`)
 
-      const utterance = new SpeechSynthesisUtterance(word)
-      const voices = speechSynthesis.getVoices()
-
-      // Log available voices for debugging (especially on mobile)
-      console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`))
-
-      // Find the best voice based on accent parameter
-      let selectedVoice = null
-
-      if (accent === "british") {
-        // Priority list for British voices (most natural first)
-        const britishVoiceNames = [
-          // Google voices (most natural, online)
-          "Google UK English Female",
-          "Google UK English Male",
-          // iOS voices
-          "Daniel",
-          "Kate",
-          "Serena",
-          // Android voices
-          "en-gb-x-rjs-local",
-          "en-gb-x-rjs-network",
-          "en-gb-x-fis-local",
-          "en-gb-x-fis-network",
-          // Microsoft Natural voices (Windows 11)
-          "Microsoft Libby Online (Natural) - English (United Kingdom)",
-          "Microsoft Ryan Online (Natural) - English (United Kingdom)",
-          "Microsoft Sonia Online (Natural) - English (United Kingdom)",
-          // Microsoft Premium voices
-          "Microsoft Hazel Desktop - English (Great Britain)",
-          "Microsoft George - English (United Kingdom)",
-          "Microsoft Susan - English (United Kingdom)",
-          // Fallback voices
-          "en-GB-LibbyNeural",
-          "en-GB-RyanNeural",
-        ]
-
-        // Try to find a preferred British voice
-        for (const name of britishVoiceNames) {
-          selectedVoice = voices.find((v) => v.name === name)
-          if (selectedVoice) {
-            console.log(`Found British voice by name: ${selectedVoice.name}`)
-            break
-          }
-        }
-
-        // Try to find any online/natural voice
-        if (!selectedVoice) {
-          selectedVoice = voices.find(
-            (v) =>
-              (v.lang === "en-GB" || v.lang.startsWith("en-GB")) &&
-              (v.name.toLowerCase().includes("natural") ||
-                v.name.toLowerCase().includes("online") ||
-                v.name.toLowerCase().includes("neural") ||
-                v.name.toLowerCase().includes("google"))
-          )
-          if (selectedVoice) {
-            console.log(`Found British voice by natural/online filter: ${selectedVoice.name}`)
-          }
-        }
-
-        // Fallback to any en-GB voice (case-insensitive lang check)
-        if (!selectedVoice) {
-          selectedVoice = voices.find(
-            (v) =>
-              v.lang.toLowerCase() === "en-gb" ||
-              v.lang.toLowerCase().startsWith("en-gb") ||
-              v.name.toLowerCase().includes("british") ||
-              v.name.toLowerCase().includes("uk") ||
-              v.name.toLowerCase().includes("gb")
-          )
-          if (selectedVoice) {
-            console.log(`Found British voice by lang/keyword filter: ${selectedVoice.name}`)
-          }
-        }
-
-        // If still no British voice found, warn user
-        if (!selectedVoice) {
-          console.warn(`No British voice found. Available voices:`, voices.map(v => `${v.name} (${v.lang})`))
-          // Show a temporary message to user
-          const message = document.createElement('div')
-          message.textContent = 'British accent not available on this device'
-          message.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
-          document.body.appendChild(message)
-          setTimeout(() => message.remove(), 3000)
-          setSpeakingWordId(null)
-          return
-        }
-      } else {
-        // Priority list for American voices (most natural first)
-        const americanVoiceNames = [
-          // Google voices (most natural, online)
-          "Google US English Female",
-          "Google US English Male",
-          "Google US English",
-          // iOS voices
-          "Samantha",
-          "Alex",
-          "Nicky",
-          // Android voices
-          "en-us-x-sfg-local",
-          "en-us-x-sfg-network",
-          "en-us-x-iom-local",
-          "en-us-x-iom-network",
-          // Microsoft Natural voices (Windows 11)
-          "Microsoft Aria Online (Natural) - English (United States)",
-          "Microsoft Jenny Online (Natural) - English (United States)",
-          "Microsoft Guy Online (Natural) - English (United States)",
-          "Microsoft Ana Online (Natural) - English (United States)",
-          // Microsoft Premium voices
-          "Microsoft Zira Desktop - English (United States)",
-          "Microsoft David Desktop - English (United States)",
-          "Microsoft Mark - English (United States)",
-          // Fallback voices
-          "en-US-AriaNeural",
-          "en-US-JennyNeural",
-          "en-US-GuyNeural",
-        ]
-
-        // Try to find a preferred American voice
-        for (const name of americanVoiceNames) {
-          selectedVoice = voices.find((v) => v.name === name)
-          if (selectedVoice) {
-            console.log(`Found American voice by name: ${selectedVoice.name}`)
-            break
-          }
-        }
-
-        // Try to find any online/natural voice
-        if (!selectedVoice) {
-          selectedVoice = voices.find(
-            (v) =>
-              (v.lang === "en-US" || v.lang.startsWith("en-US")) &&
-              (v.name.toLowerCase().includes("natural") ||
-                v.name.toLowerCase().includes("online") ||
-                v.name.toLowerCase().includes("neural") ||
-                v.name.toLowerCase().includes("google"))
-          )
-          if (selectedVoice) {
-            console.log(`Found American voice by natural/online filter: ${selectedVoice.name}`)
-          }
-        }
-
-        // Fallback to any en-US voice (case-insensitive lang check)
-        if (!selectedVoice) {
-          selectedVoice = voices.find(
-            (v) =>
-              v.lang.toLowerCase() === "en-us" ||
-              v.lang.toLowerCase().startsWith("en-us") ||
-              v.name.toLowerCase().includes("american") ||
-              v.name.toLowerCase().includes("us")
-          )
-          if (selectedVoice) {
-            console.log(`Found American voice by lang/keyword filter: ${selectedVoice.name}`)
-          }
-        }
+    try {
+      // Primary method: Use HTML5 Audio with Google Translate TTS (most reliable on mobile)
+      const locale = accent === "british" ? "en-GB" : "en-US"
+      const cacheKey = `${word}-${accent}`
+      
+      // Check cache first
+      let audio = audioCache.get(cacheKey)
+      
+      if (!audio) {
+        // Create new audio element
+        audio = new Audio()
+        audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(word)}`
+        
+        // Add to cache
+        setAudioCache(prev => {
+          const newCache = new Map(prev)
+          newCache.set(cacheKey, audio!)
+          return newCache
+        })
       }
 
-      if (selectedVoice) {
-        utterance.voice = selectedVoice
-        console.log(
-          `Using voice: ${selectedVoice.name} (${selectedVoice.lang})`
+      // Event listeners for audio
+      audio.onended = () => {
+        setSpeakingWordId(null)
+      }
+
+      audio.onerror = (error) => {
+        console.error("Audio playback error:", error)
+        // Fallback to speechSynthesis
+        fallbackToSpeechSynthesis(wordId, word, accent)
+      }
+
+      // Play audio
+      await audio.play()
+      console.log(`Playing audio via Google TTS: ${word} (${locale})`)
+      
+    } catch (error) {
+      console.error("Error with Google TTS, falling back to speechSynthesis:", error)
+      // Fallback to native speechSynthesis
+      fallbackToSpeechSynthesis(wordId, word, accent)
+    }
+  }
+
+  const fallbackToSpeechSynthesis = (
+    wordId: number,
+    word: string,
+    accent: "american" | "british"
+  ) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setSpeakingWordId(null)
+      showErrorMessage("Text-to-speech not supported on this device")
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(word)
+    const voices = speechSynthesis.getVoices()
+
+    console.log("Fallback to speechSynthesis. Available voices:", voices.map((v) => `${v.name} (${v.lang})`))
+
+    let selectedVoice = null
+
+    if (accent === "british") {
+      // Try to find British voice
+      const britishVoiceNames = [
+        "Google UK English Female", "Google UK English Male",
+        "Daniel", "Kate", "Serena", // iOS
+        "en-gb-x-rjs-local", "en-gb-x-rjs-network", // Android
+        "Microsoft Libby Online (Natural) - English (United Kingdom)",
+        "Microsoft Ryan Online (Natural) - English (United Kingdom)",
+      ]
+
+      for (const name of britishVoiceNames) {
+        selectedVoice = voices.find((v) => v.name === name)
+        if (selectedVoice) break
+      }
+
+      if (!selectedVoice) {
+        selectedVoice = voices.find(
+          (v) =>
+            v.lang.toLowerCase().includes("en-gb") ||
+            v.name.toLowerCase().includes("british") ||
+            v.name.toLowerCase().includes("uk")
         )
       }
 
-      // Optimize for natural speech
-      utterance.rate = 0.9
-      utterance.pitch = 1.0
-      utterance.volume = 1.0
-
-      // Add event listeners for loading state
-      utterance.onstart = () => {
-        setSpeakingWordId(`${wordId}-${accent}`)
-      }
-
-      utterance.onend = () => {
+      if (!selectedVoice) {
+        showErrorMessage("British accent not available on this device")
         setSpeakingWordId(null)
+        return
+      }
+    } else {
+      // Try to find American voice
+      const americanVoiceNames = [
+        "Google US English Female", "Google US English Male",
+        "Samantha", "Alex", "Nicky", // iOS
+        "en-us-x-sfg-local", "en-us-x-sfg-network", // Android
+        "Microsoft Aria Online (Natural) - English (United States)",
+        "Microsoft Jenny Online (Natural) - English (United States)",
+      ]
+
+      for (const name of americanVoiceNames) {
+        selectedVoice = voices.find((v) => v.name === name)
+        if (selectedVoice) break
       }
 
-      utterance.onerror = () => {
-        setSpeakingWordId(null)
+      if (!selectedVoice) {
+        selectedVoice = voices.find(
+          (v) =>
+            v.lang.toLowerCase().includes("en-us") ||
+            v.name.toLowerCase().includes("american") ||
+            v.name.toLowerCase().includes("us")
+        )
       }
-
-      speechSynthesis.speak(utterance)
     }
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+      console.log(`Using fallback voice: ${selectedVoice.name} (${selectedVoice.lang})`)
+    }
+
+    utterance.rate = 0.9
+    utterance.pitch = 1.0
+    utterance.volume = 1.0
+
+    utterance.onend = () => {
+      setSpeakingWordId(null)
+    }
+
+    utterance.onerror = () => {
+      setSpeakingWordId(null)
+      showErrorMessage("Unable to play pronunciation")
+    }
+
+    speechSynthesis.speak(utterance)
+  }
+
+  const showErrorMessage = (text: string) => {
+    const message = document.createElement("div")
+    message.textContent = text
+    message.style.cssText =
+      "position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+    document.body.appendChild(message)
+    setTimeout(() => message.remove(), 3000)
   }
 
   if (words.length === 0) {
