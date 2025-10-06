@@ -61,7 +61,7 @@ export async function generateStaticParams() {
     const levels = await prisma.studyLevel.findMany({
       select: { id: true },
     })
-    
+
     return levels.map((level) => ({
       id: level.id.toString(),
     }))
