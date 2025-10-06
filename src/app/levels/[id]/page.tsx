@@ -2,6 +2,9 @@ import { UnitsView } from "@/components/UnitsView"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { FaArrowLeft, FaGraduationCap } from "react-icons/fa"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 interface Word {
   id: number
@@ -52,22 +55,13 @@ async function getStudyLevel(id: string): Promise<StudyLevel | null> {
   }
 }
 
-// Generate static params for all levels at build time
+// Generate static params for all levels at build time using direct DB query
 export async function generateStaticParams() {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
-
-    const response = await fetch(`${baseUrl}/api/levels`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+    const levels = await prisma.studyLevel.findMany({
+      select: { id: true },
     })
-
-    if (!response.ok) {
-      return []
-    }
-
-    const levels: StudyLevel[] = await response.json()
+    
     return levels.map((level) => ({
       id: level.id.toString(),
     }))
@@ -76,6 +70,9 @@ export async function generateStaticParams() {
     return []
   }
 }
+
+// Allow dynamic params for levels created after build
+export const dynamicParams = true
 
 export default async function LevelPage({
   params,

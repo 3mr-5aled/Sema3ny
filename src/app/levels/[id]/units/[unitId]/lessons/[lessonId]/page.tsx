@@ -2,6 +2,9 @@ import { WordCards } from "@/components/WordCards"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { FaArrowLeft, FaBook } from "react-icons/fa"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 interface Word {
   id: number
@@ -72,22 +75,23 @@ async function getLesson(
   }
 }
 
-// Generate static params for all lessons at build time
+// Generate static params for all lessons at build time using direct DB query
 export async function generateStaticParams() {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
-
-    const response = await fetch(`${baseUrl}/api/levels`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+    const levels = await prisma.studyLevel.findMany({
+      select: {
+        id: true,
+        units: {
+          select: {
+            id: true,
+            lessons: {
+              select: { id: true },
+            },
+          },
+        },
+      },
     })
 
-    if (!response.ok) {
-      return []
-    }
-
-    const levels: StudyLevel[] = await response.json()
     const params: { id: string; unitId: string; lessonId: string }[] = []
 
     levels.forEach((level) => {
@@ -108,6 +112,9 @@ export async function generateStaticParams() {
     return []
   }
 }
+
+// Allow dynamic params for lessons created after build
+export const dynamicParams = true
 
 export default async function LessonPage({
   params,
