@@ -5,41 +5,46 @@ The Sema3ny app uses a **hybrid TTS (Text-to-Speech) approach** to provide relia
 
 ## Solution Architecture
 
-### Primary Method: Google Translate TTS
+### ✅ Primary Method: Google Translate TTS (Used for ALL devices)
 - Uses HTML5 Audio with Google Translate's TTS endpoint
+- **Used For**: Desktop AND Mobile - ALL browsers, ALL devices
 - **Advantages**:
-  - ✅ Works on ALL mobile browsers (iOS Safari, Android Chrome, MS Edge Mobile)
+  - ✅ Works on ALL browsers (Chrome, Safari, Edge, Firefox)
+  - ✅ Works on ALL devices (Desktop, Mobile, Tablet)
   - ✅ Consistent British and American accent quality
   - ✅ No installation required
+  - ✅ No device-specific code needed
   - ✅ Faster playback response
-  - ✅ Cached audio for better performance
+  - ✅ Audio caching for instant replay
+  - ✅ Same experience everywhere
 
-### Fallback Method: Web Speech API
+### 🔄 Fallback Method: Web Speech API (Rarely used)
 - Uses browser's native `speechSynthesis` API
-- **When used**: If Google TTS fails (rare cases: no internet, blocked endpoint)
-- **Advantages**: Works offline on desktop browsers with good voice support
+- **When used**: Only if Google TTS fails (rare: no internet, blocked endpoint)
+- **Advantages**: Can work offline on some desktop browsers
 
-## Mobile Browser Support
+## Universal Browser Support
 
-### ✅ iOS Safari
-- **Primary**: Google TTS (en-GB, en-US)
-- **Fallback**: Native voices (Daniel, Kate, Samantha, Alex)
-- **Status**: Fully supported, no installation needed
+### 🌐 ALL Devices Use Google TTS
 
-### ✅ Android Chrome
-- **Primary**: Google TTS (en-GB, en-US)
-- **Fallback**: Native voices (en-gb-x-rjs-local, en-us-x-sfg-local)
-- **Status**: Fully supported, no installation needed
+**Desktop Browsers:**
+- ✅ Chrome - Google TTS (en-GB, en-US)
+- ✅ Safari - Google TTS (en-GB, en-US)
+- ✅ Edge - Google TTS (en-GB, en-US)
+- ✅ Firefox - Google TTS (en-GB, en-US)
 
-### ✅ MS Edge Mobile
-- **Primary**: Google TTS (en-GB, en-US)
-- **Fallback**: Chromium-based voices
-- **Status**: Fully supported, no bugs
+**Mobile Browsers:**
+- ✅ iOS Safari - Google TTS (en-GB, en-US)
+- ✅ Android Chrome - Google TTS (en-GB, en-US)
+- ✅ MS Edge Mobile - Google TTS (en-GB, en-US)
+- ✅ Firefox Mobile - Google TTS (en-GB, en-US)
 
-### ✅ Desktop Browsers
-- **Primary**: Google TTS (en-GB, en-US)
-- **Fallback**: High-quality native voices (Microsoft, Google)
-- **Status**: Excellent support with natural voices
+**Fallback (Rare):**
+- Only used if Google TTS fails
+- Uses browser's native speechSynthesis
+- Quality varies by browser/device
+
+**Result**: Same high-quality pronunciation experience everywhere! 🎉
 
 ## What We've Implemented
 
@@ -49,11 +54,11 @@ The Sema3ny app uses a **hybrid TTS (Text-to-Speech) approach** to provide relia
 - **Caching**: Audio elements cached in memory for repeat playback
 - **Error handling**: Graceful fallback with user-friendly error messages
 
-### 2. Smart Voice Detection (Fallback Layer)
-- Mobile-specific voice names (iOS: Daniel, Kate, Samantha, Alex)
-- Android-specific voice names (en-gb-x-*, en-us-x-*)
-- Case-insensitive language matching
-- Priority-based voice selection (natural > online > local)
+### 2. Universal Implementation
+- **Single code path** for all devices (desktop and mobile)
+- No device detection or browser-specific code needed
+- Google TTS endpoint works identically everywhere
+- Only fallback layer has device-specific voice detection
 
 ### 3. User Feedback
 - Visual feedback during playback (spinning animation)

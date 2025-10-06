@@ -40,19 +40,17 @@ const partOfSpeechLabels = {
 
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
-  const [audioCache, setAudioCache] = useState<Map<string, HTMLAudioElement>>(new Map())
+  const [audioCache, setAudioCache] = useState<Map<string, HTMLAudioElement>>(
+    new Map()
+  )
 
-  // Detect if user is on mobile device
-  const isMobile = typeof window !== "undefined" && 
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
-  // Ensure voices are loaded (for desktop fallback)
+  // Ensure voices are loaded (for speechSynthesis fallback only)
   useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window && !isMobile) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       const loadVoices = () => {
         const voices = speechSynthesis.getVoices()
         if (voices.length > 0) {
-          console.log(`Loaded ${voices.length} voices for fallback`)
+          console.log(`Loaded ${voices.length} fallback voices`)
         }
       }
 
@@ -61,7 +59,7 @@ export function WordCards({ words }: WordCardsProps) {
         speechSynthesis.onvoiceschanged = loadVoices
       }
     }
-  }, [isMobile])
+  }, [])
 
   const speakWord = async (
     wordId: number,
@@ -80,17 +78,19 @@ export function WordCards({ words }: WordCardsProps) {
       // Primary method: Use HTML5 Audio with Google Translate TTS (most reliable on mobile)
       const locale = accent === "british" ? "en-GB" : "en-US"
       const cacheKey = `${word}-${accent}`
-      
+
       // Check cache first
       let audio = audioCache.get(cacheKey)
-      
+
       if (!audio) {
         // Create new audio element
         audio = new Audio()
-        audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(word)}`
-        
+        audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(
+          word
+        )}`
+
         // Add to cache
-        setAudioCache(prev => {
+        setAudioCache((prev) => {
           const newCache = new Map(prev)
           newCache.set(cacheKey, audio!)
           return newCache
@@ -111,9 +111,11 @@ export function WordCards({ words }: WordCardsProps) {
       // Play audio
       await audio.play()
       console.log(`Playing audio via Google TTS: ${word} (${locale})`)
-      
     } catch (error) {
-      console.error("Error with Google TTS, falling back to speechSynthesis:", error)
+      console.error(
+        "Error with Google TTS, falling back to speechSynthesis:",
+        error
+      )
       // Fallback to native speechSynthesis
       fallbackToSpeechSynthesis(wordId, word, accent)
     }
@@ -133,16 +135,23 @@ export function WordCards({ words }: WordCardsProps) {
     const utterance = new SpeechSynthesisUtterance(word)
     const voices = speechSynthesis.getVoices()
 
-    console.log("Fallback to speechSynthesis. Available voices:", voices.map((v) => `${v.name} (${v.lang})`))
+    console.log(
+      "Fallback to speechSynthesis. Available voices:",
+      voices.map((v) => `${v.name} (${v.lang})`)
+    )
 
     let selectedVoice = null
 
     if (accent === "british") {
       // Try to find British voice
       const britishVoiceNames = [
-        "Google UK English Female", "Google UK English Male",
-        "Daniel", "Kate", "Serena", // iOS
-        "en-gb-x-rjs-local", "en-gb-x-rjs-network", // Android
+        "Google UK English Female",
+        "Google UK English Male",
+        "Daniel",
+        "Kate",
+        "Serena", // iOS
+        "en-gb-x-rjs-local",
+        "en-gb-x-rjs-network", // Android
         "Microsoft Libby Online (Natural) - English (United Kingdom)",
         "Microsoft Ryan Online (Natural) - English (United Kingdom)",
       ]
@@ -169,9 +178,13 @@ export function WordCards({ words }: WordCardsProps) {
     } else {
       // Try to find American voice
       const americanVoiceNames = [
-        "Google US English Female", "Google US English Male",
-        "Samantha", "Alex", "Nicky", // iOS
-        "en-us-x-sfg-local", "en-us-x-sfg-network", // Android
+        "Google US English Female",
+        "Google US English Male",
+        "Samantha",
+        "Alex",
+        "Nicky", // iOS
+        "en-us-x-sfg-local",
+        "en-us-x-sfg-network", // Android
         "Microsoft Aria Online (Natural) - English (United States)",
         "Microsoft Jenny Online (Natural) - English (United States)",
       ]
@@ -193,7 +206,9 @@ export function WordCards({ words }: WordCardsProps) {
 
     if (selectedVoice) {
       utterance.voice = selectedVoice
-      console.log(`Using fallback voice: ${selectedVoice.name} (${selectedVoice.lang})`)
+      console.log(
+        `Using fallback voice: ${selectedVoice.name} (${selectedVoice.lang})`
+      )
     }
 
     utterance.rate = 0.9
