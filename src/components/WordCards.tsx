@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { FaVolumeUp } from "react-icons/fa"
 import { USFlag, UKFlag } from "./Flags"
 
@@ -40,191 +40,56 @@ const partOfSpeechLabels = {
 
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
-  const [audioCache, setAudioCache] = useState<Map<string, HTMLAudioElement>>(
-    new Map()
-  )
-
-  // Ensure voices are loaded (for speechSynthesis fallback only)
-  useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      const loadVoices = () => {
-        const voices = speechSynthesis.getVoices()
-        if (voices.length > 0) {
-          console.log(`Loaded ${voices.length} fallback voices`)
-        }
-      }
-
-      loadVoices()
-      if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = loadVoices
-      }
-    }
-  }, [])
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
 
   const speakWord = async (
     wordId: number,
     word: string,
     accent: "american" | "british"
   ) => {
-    // Cancel any ongoing speech
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      speechSynthesis.cancel()
+    // Stop any currently playing audio
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
     }
 
     // Set loading state
     setSpeakingWordId(`${wordId}-${accent}`)
 
     try {
-      // Primary method: Use HTML5 Audio with Google Translate TTS (most reliable on mobile)
+      // Use Google Translate TTS
       const locale = accent === "british" ? "en-GB" : "en-US"
-      const cacheKey = `${word}-${accent}`
+      
+      // Create new audio element each time (no caching to avoid repeat issues)
+      const audio = new Audio()
+      audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(word)}`
+      
+      // Store reference to current audio
+      setCurrentAudio(audio)
 
-      // Check cache first
-      let audio = audioCache.get(cacheKey)
-
-      if (!audio) {
-        // Create new audio element
-        audio = new Audio()
-        audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(
-          word
-        )}`
-
-        // Add to cache
-        setAudioCache((prev) => {
-          const newCache = new Map(prev)
-          newCache.set(cacheKey, audio!)
-          return newCache
-        })
-      }
-
-      // Event listeners for audio
+      // Event listeners
       audio.onended = () => {
         setSpeakingWordId(null)
+        setCurrentAudio(null)
       }
 
-      audio.onerror = (error) => {
-        console.error("Audio playback error:", error)
-        // Fallback to speechSynthesis
-        fallbackToSpeechSynthesis(wordId, word, accent)
+      audio.onerror = () => {
+        console.error("Google TTS failed to load audio")
+        setSpeakingWordId(null)
+        setCurrentAudio(null)
+        showErrorMessage("Unable to play pronunciation. Check your internet connection.")
       }
 
       // Play audio
       await audio.play()
-      console.log(`Playing audio via Google TTS: ${word} (${locale})`)
+      console.log(`Playing via Google TTS: ${word} (${locale})`)
+      
     } catch (error) {
-      console.error(
-        "Error with Google TTS, falling back to speechSynthesis:",
-        error
-      )
-      // Fallback to native speechSynthesis
-      fallbackToSpeechSynthesis(wordId, word, accent)
-    }
-  }
-
-  const fallbackToSpeechSynthesis = (
-    wordId: number,
-    word: string,
-    accent: "american" | "british"
-  ) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      console.error("Error playing audio:", error)
       setSpeakingWordId(null)
-      showErrorMessage("Text-to-speech not supported on this device")
-      return
+      setCurrentAudio(null)
+      showErrorMessage("Unable to play pronunciation. Please try again.")
     }
-
-    const utterance = new SpeechSynthesisUtterance(word)
-    const voices = speechSynthesis.getVoices()
-
-    console.log(
-      "Fallback to speechSynthesis. Available voices:",
-      voices.map((v) => `${v.name} (${v.lang})`)
-    )
-
-    let selectedVoice = null
-
-    if (accent === "british") {
-      // Try to find British voice
-      const britishVoiceNames = [
-        "Google UK English Female",
-        "Google UK English Male",
-        "Daniel",
-        "Kate",
-        "Serena", // iOS
-        "en-gb-x-rjs-local",
-        "en-gb-x-rjs-network", // Android
-        "Microsoft Libby Online (Natural) - English (United Kingdom)",
-        "Microsoft Ryan Online (Natural) - English (United Kingdom)",
-      ]
-
-      for (const name of britishVoiceNames) {
-        selectedVoice = voices.find((v) => v.name === name)
-        if (selectedVoice) break
-      }
-
-      if (!selectedVoice) {
-        selectedVoice = voices.find(
-          (v) =>
-            v.lang.toLowerCase().includes("en-gb") ||
-            v.name.toLowerCase().includes("british") ||
-            v.name.toLowerCase().includes("uk")
-        )
-      }
-
-      if (!selectedVoice) {
-        showErrorMessage("British accent not available on this device")
-        setSpeakingWordId(null)
-        return
-      }
-    } else {
-      // Try to find American voice
-      const americanVoiceNames = [
-        "Google US English Female",
-        "Google US English Male",
-        "Samantha",
-        "Alex",
-        "Nicky", // iOS
-        "en-us-x-sfg-local",
-        "en-us-x-sfg-network", // Android
-        "Microsoft Aria Online (Natural) - English (United States)",
-        "Microsoft Jenny Online (Natural) - English (United States)",
-      ]
-
-      for (const name of americanVoiceNames) {
-        selectedVoice = voices.find((v) => v.name === name)
-        if (selectedVoice) break
-      }
-
-      if (!selectedVoice) {
-        selectedVoice = voices.find(
-          (v) =>
-            v.lang.toLowerCase().includes("en-us") ||
-            v.name.toLowerCase().includes("american") ||
-            v.name.toLowerCase().includes("us")
-        )
-      }
-    }
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice
-      console.log(
-        `Using fallback voice: ${selectedVoice.name} (${selectedVoice.lang})`
-      )
-    }
-
-    utterance.rate = 0.9
-    utterance.pitch = 1.0
-    utterance.volume = 1.0
-
-    utterance.onend = () => {
-      setSpeakingWordId(null)
-    }
-
-    utterance.onerror = () => {
-      setSpeakingWordId(null)
-      showErrorMessage("Unable to play pronunciation")
-    }
-
-    speechSynthesis.speak(utterance)
   }
 
   const showErrorMessage = (text: string) => {
