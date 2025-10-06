@@ -37,7 +37,7 @@ export default function LessonPage() {
   const levelId = params.id as string
   const unitId = params.unitId as string
   const lessonId = params.lessonId as string
-  
+
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [unit, setUnit] = useState<Unit | null>(null)
   const [level, setLevel] = useState<StudyLevel | null>(null)
@@ -49,7 +49,7 @@ export default function LessonPage() {
       try {
         setLoading(true)
         const response = await fetch(`/api/levels`)
-        
+
         if (!response.ok) {
           setError(true)
           return
@@ -63,13 +63,17 @@ export default function LessonPage() {
           return
         }
 
-        const foundUnit = foundLevel.units.find((u) => u.id === parseInt(unitId))
+        const foundUnit = foundLevel.units.find(
+          (u) => u.id === parseInt(unitId)
+        )
         if (!foundUnit) {
           setError(true)
           return
         }
 
-        const foundLesson = foundUnit.lessons.find((l) => l.id === parseInt(lessonId))
+        const foundLesson = foundUnit.lessons.find(
+          (l) => l.id === parseInt(lessonId)
+        )
         if (!foundLesson) {
           setError(true)
           return
@@ -95,7 +99,9 @@ export default function LessonPage() {
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading lesson...</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Loading lesson...
+            </p>
           </div>
         </div>
       </div>

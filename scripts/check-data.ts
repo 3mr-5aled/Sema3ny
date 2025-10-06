@@ -21,14 +21,18 @@ async function checkData() {
     })
 
     console.log(`📊 Study Levels: ${levels.length}`)
-    
+
     levels.forEach((level) => {
       console.log(`\n  Level ${level.id}: ${level.name}`)
       console.log(`    Units: ${level.units.length}`)
       level.units.forEach((unit) => {
-        console.log(`      Unit ${unit.id}: ${unit.name} (${unit.lessons.length} lessons)`)
+        console.log(
+          `      Unit ${unit.id}: ${unit.name} (${unit.lessons.length} lessons)`
+        )
         unit.lessons.forEach((lesson) => {
-          console.log(`        Lesson ${lesson.id}: ${lesson.name} (${lesson.words.length} words)`)
+          console.log(
+            `        Lesson ${lesson.id}: ${lesson.name} (${lesson.words.length} words)`
+          )
         })
       })
     })

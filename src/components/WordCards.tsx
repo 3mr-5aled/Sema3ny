@@ -41,17 +41,28 @@ const partOfSpeechLabels = {
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
 
-  // Ensure voices are loaded
+  // Ensure voices are loaded (critical for mobile browsers)
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       const loadVoices = () => {
-        speechSynthesis.getVoices()
+        const voices = speechSynthesis.getVoices()
+        if (voices.length > 0) {
+          console.log(`Loaded ${voices.length} voices`)
+        }
       }
 
+      // Try loading immediately
       loadVoices()
+      
+      // Set up listener for when voices change (important for mobile)
       if (speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = loadVoices
       }
+
+      // Fallback: Try loading again after a short delay (for mobile browsers)
+      const timeout = setTimeout(loadVoices, 100)
+      
+      return () => clearTimeout(timeout)
     }
   }, [])
 
@@ -70,6 +81,9 @@ export function WordCards({ words }: WordCardsProps) {
       const utterance = new SpeechSynthesisUtterance(word)
       const voices = speechSynthesis.getVoices()
 
+      // Log available voices for debugging (especially on mobile)
+      console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`))
+
       // Find the best voice based on accent parameter
       let selectedVoice = null
 
@@ -79,6 +93,15 @@ export function WordCards({ words }: WordCardsProps) {
           // Google voices (most natural, online)
           "Google UK English Female",
           "Google UK English Male",
+          // iOS voices
+          "Daniel",
+          "Kate",
+          "Serena",
+          // Android voices
+          "en-gb-x-rjs-local",
+          "en-gb-x-rjs-network",
+          "en-gb-x-fis-local",
+          "en-gb-x-fis-network",
           // Microsoft Natural voices (Windows 11)
           "Microsoft Libby Online (Natural) - English (United Kingdom)",
           "Microsoft Ryan Online (Natural) - English (United Kingdom)",
@@ -95,7 +118,10 @@ export function WordCards({ words }: WordCardsProps) {
         // Try to find a preferred British voice
         for (const name of britishVoiceNames) {
           selectedVoice = voices.find((v) => v.name === name)
-          if (selectedVoice) break
+          if (selectedVoice) {
+            console.log(`Found British voice by name: ${selectedVoice.name}`)
+            break
+          }
         }
 
         // Try to find any online/natural voice
@@ -108,17 +134,37 @@ export function WordCards({ words }: WordCardsProps) {
                 v.name.toLowerCase().includes("neural") ||
                 v.name.toLowerCase().includes("google"))
           )
+          if (selectedVoice) {
+            console.log(`Found British voice by natural/online filter: ${selectedVoice.name}`)
+          }
         }
 
-        // Fallback to any en-GB voice
+        // Fallback to any en-GB voice (case-insensitive lang check)
         if (!selectedVoice) {
           selectedVoice = voices.find(
             (v) =>
-              v.lang === "en-GB" ||
-              v.lang.startsWith("en-GB") ||
+              v.lang.toLowerCase() === "en-gb" ||
+              v.lang.toLowerCase().startsWith("en-gb") ||
               v.name.toLowerCase().includes("british") ||
-              v.name.toLowerCase().includes("uk")
+              v.name.toLowerCase().includes("uk") ||
+              v.name.toLowerCase().includes("gb")
           )
+          if (selectedVoice) {
+            console.log(`Found British voice by lang/keyword filter: ${selectedVoice.name}`)
+          }
+        }
+
+        // If still no British voice found, warn user
+        if (!selectedVoice) {
+          console.warn(`No British voice found. Available voices:`, voices.map(v => `${v.name} (${v.lang})`))
+          // Show a temporary message to user
+          const message = document.createElement('div')
+          message.textContent = 'British accent not available on this device'
+          message.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+          document.body.appendChild(message)
+          setTimeout(() => message.remove(), 3000)
+          setSpeakingWordId(null)
+          return
         }
       } else {
         // Priority list for American voices (most natural first)
@@ -127,6 +173,15 @@ export function WordCards({ words }: WordCardsProps) {
           "Google US English Female",
           "Google US English Male",
           "Google US English",
+          // iOS voices
+          "Samantha",
+          "Alex",
+          "Nicky",
+          // Android voices
+          "en-us-x-sfg-local",
+          "en-us-x-sfg-network",
+          "en-us-x-iom-local",
+          "en-us-x-iom-network",
           // Microsoft Natural voices (Windows 11)
           "Microsoft Aria Online (Natural) - English (United States)",
           "Microsoft Jenny Online (Natural) - English (United States)",
@@ -145,7 +200,10 @@ export function WordCards({ words }: WordCardsProps) {
         // Try to find a preferred American voice
         for (const name of americanVoiceNames) {
           selectedVoice = voices.find((v) => v.name === name)
-          if (selectedVoice) break
+          if (selectedVoice) {
+            console.log(`Found American voice by name: ${selectedVoice.name}`)
+            break
+          }
         }
 
         // Try to find any online/natural voice
@@ -158,17 +216,23 @@ export function WordCards({ words }: WordCardsProps) {
                 v.name.toLowerCase().includes("neural") ||
                 v.name.toLowerCase().includes("google"))
           )
+          if (selectedVoice) {
+            console.log(`Found American voice by natural/online filter: ${selectedVoice.name}`)
+          }
         }
 
-        // Fallback to any en-US voice
+        // Fallback to any en-US voice (case-insensitive lang check)
         if (!selectedVoice) {
           selectedVoice = voices.find(
             (v) =>
-              v.lang === "en-US" ||
-              v.lang.startsWith("en-US") ||
+              v.lang.toLowerCase() === "en-us" ||
+              v.lang.toLowerCase().startsWith("en-us") ||
               v.name.toLowerCase().includes("american") ||
               v.name.toLowerCase().includes("us")
           )
+          if (selectedVoice) {
+            console.log(`Found American voice by lang/keyword filter: ${selectedVoice.name}`)
+          }
         }
       }
 

@@ -44,7 +44,7 @@ export default function LevelPage() {
       try {
         setLoading(true)
         const response = await fetch(`/api/levels`)
-        
+
         if (!response.ok) {
           setError(true)
           return
@@ -52,7 +52,7 @@ export default function LevelPage() {
 
         const levels: StudyLevel[] = await response.json()
         const foundLevel = levels.find((level) => level.id === parseInt(id))
-        
+
         if (!foundLevel) {
           setError(true)
           return

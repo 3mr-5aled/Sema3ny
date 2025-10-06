@@ -36,7 +36,7 @@ export default function UnitPage() {
   const params = useParams()
   const levelId = params.id as string
   const unitId = params.unitId as string
-  
+
   const [unit, setUnit] = useState<Unit | null>(null)
   const [level, setLevel] = useState<StudyLevel | null>(null)
   const [loading, setLoading] = useState(true)
@@ -47,7 +47,7 @@ export default function UnitPage() {
       try {
         setLoading(true)
         const response = await fetch(`/api/levels`)
-        
+
         if (!response.ok) {
           setError(true)
           return
@@ -61,7 +61,9 @@ export default function UnitPage() {
           return
         }
 
-        const foundUnit = foundLevel.units.find((u) => u.id === parseInt(unitId))
+        const foundUnit = foundLevel.units.find(
+          (u) => u.id === parseInt(unitId)
+        )
         if (!foundUnit) {
           setError(true)
           return

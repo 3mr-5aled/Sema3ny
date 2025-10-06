@@ -18,7 +18,7 @@ async function prewarmPages() {
 
   for (const level of levels) {
     console.log(`\n📖 Level ${level.id}: ${level.name}`)
-    
+
     // Warm level page
     console.log(`  ⏳ Warming /levels/${level.id}...`)
     await fetch(`${BASE_URL}/levels/${level.id}`)
@@ -36,8 +36,12 @@ async function prewarmPages() {
       // Warm each lesson
       for (const lesson of unit.lessons) {
         console.log(`      📝 Lesson ${lesson.id}: ${lesson.name}`)
-        console.log(`      ⏳ Warming /levels/${level.id}/units/${unit.id}/lessons/${lesson.id}...`)
-        await fetch(`${BASE_URL}/levels/${level.id}/units/${unit.id}/lessons/${lesson.id}`)
+        console.log(
+          `      ⏳ Warming /levels/${level.id}/units/${unit.id}/lessons/${lesson.id}...`
+        )
+        await fetch(
+          `${BASE_URL}/levels/${level.id}/units/${unit.id}/lessons/${lesson.id}`
+        )
         totalPages++
         console.log(`      ✅ Done`)
       }
