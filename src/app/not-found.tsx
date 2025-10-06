@@ -13,7 +13,7 @@ export default function NotFound() {
             alt="Sema3ny Logo"
             width={120}
             height={120}
-            className="opacity-50 dark:opacity-30"
+            className="opacity-70 dark:opacity-70"
           />
         </div>
 
