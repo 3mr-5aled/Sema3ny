@@ -40,56 +40,49 @@ const partOfSpeechLabels = {
 
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
 
-  const speakWord = async (
+  const speakWord = (
     wordId: number,
     word: string,
     accent: "american" | "british"
   ) => {
-    // Stop any currently playing audio
-    if (currentAudio) {
-      currentAudio.pause()
-      currentAudio.currentTime = 0
+    // Check if speech synthesis is supported
+    if (!("speechSynthesis" in window)) {
+      showErrorMessage("Text-to-speech not supported on this device")
+      return
     }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
 
     // Set loading state
     setSpeakingWordId(`${wordId}-${accent}`)
 
-    try {
-      // Use Google Translate TTS
-      const locale = accent === "british" ? "en-GB" : "en-US"
-      
-      // Create new audio element each time (no caching to avoid repeat issues)
-      const audio = new Audio()
-      audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(word)}`
-      
-      // Store reference to current audio
-      setCurrentAudio(audio)
+    // Create utterance
+    const utterance = new SpeechSynthesisUtterance(word)
+    
+    // Set language/locale based on accent
+    utterance.lang = accent === "british" ? "en-GB" : "en-US"
+    
+    // Optimize for natural speech
+    utterance.rate = 0.9
+    utterance.pitch = 1.0
+    utterance.volume = 1.0
 
-      // Event listeners
-      audio.onended = () => {
-        setSpeakingWordId(null)
-        setCurrentAudio(null)
-      }
-
-      audio.onerror = () => {
-        console.error("Google TTS failed to load audio")
-        setSpeakingWordId(null)
-        setCurrentAudio(null)
-        showErrorMessage("Unable to play pronunciation. Check your internet connection.")
-      }
-
-      // Play audio
-      await audio.play()
-      console.log(`Playing via Google TTS: ${word} (${locale})`)
-      
-    } catch (error) {
-      console.error("Error playing audio:", error)
+    // Event listeners
+    utterance.onend = () => {
       setSpeakingWordId(null)
-      setCurrentAudio(null)
-      showErrorMessage("Unable to play pronunciation. Please try again.")
     }
+
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event)
+      setSpeakingWordId(null)
+      showErrorMessage("Unable to play pronunciation")
+    }
+
+    // Speak
+    window.speechSynthesis.speak(utterance)
+    console.log(`Speaking: ${word} (${utterance.lang})`)
   }
 
   const showErrorMessage = (text: string) => {
