@@ -186,6 +186,7 @@ function WordCard({
 
   const isAmericanSpeaking = speakingWordId === `${word.id}-american`
   const isBritishSpeaking = speakingWordId === `${word.id}-british`
+  const isAnySpeaking = isAmericanSpeaking || isBritishSpeaking
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 dark:border-gray-700 group">
@@ -199,10 +200,12 @@ function WordCard({
         <div className="flex space-x-2">
           <button
             onClick={() => onSpeak(word.id, word.en, "american")}
-            disabled={isAmericanSpeaking}
+            disabled={isAnySpeaking}
             className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
               isAmericanSpeaking
                 ? "bg-blue-400 cursor-wait"
+                : isAnySpeaking
+                ? "bg-blue-300 cursor-not-allowed opacity-50"
                 : "bg-blue-500 hover:bg-blue-600"
             }`}
             title="American pronunciation"
@@ -223,10 +226,12 @@ function WordCard({
           </button>
           <button
             onClick={() => onSpeak(word.id, word.en, "british")}
-            disabled={isBritishSpeaking}
+            disabled={isAnySpeaking}
             className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
               isBritishSpeaking
                 ? "bg-indigo-400 cursor-wait"
+                : isAnySpeaking
+                ? "bg-indigo-300 cursor-not-allowed opacity-50"
                 : "bg-indigo-500 hover:bg-indigo-600"
             }`}
             title="British pronunciation"
