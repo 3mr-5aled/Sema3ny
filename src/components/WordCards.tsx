@@ -186,7 +186,8 @@ function WordCard({
 
   const isAmericanSpeaking = speakingWordId === `${word.id}-american`
   const isBritishSpeaking = speakingWordId === `${word.id}-british`
-  const isAnySpeaking = isAmericanSpeaking || isBritishSpeaking
+  // Disable ALL buttons when ANY word is being read aloud
+  const isAnySpeaking = speakingWordId !== null
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 dark:border-gray-700 group">
