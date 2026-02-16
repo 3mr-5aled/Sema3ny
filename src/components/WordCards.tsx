@@ -60,10 +60,10 @@ export function WordCards({ words }: WordCardsProps) {
 
     // Create utterance
     const utterance = new SpeechSynthesisUtterance(word)
-    
+
     // Set language/locale based on accent
     utterance.lang = accent === "british" ? "en-GB" : "en-US"
-    
+
     // Optimize for natural speech
     utterance.rate = 0.9
     utterance.pitch = 1.0
