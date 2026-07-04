@@ -20,6 +20,7 @@ const cairo = Cairo({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://sema3ny.vercel.app"),
   title: "EntQha (انطقها) - English Vocabulary Guide",
   description:
     "Master English vocabulary and pronunciation with EntQha (انطقها) through interactive word cards and text-to-speech.",
@@ -40,6 +41,30 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/launchericon-192x192.png", sizes: "192x192", type: "image/png" }],
     shortcut: [{ url: "/app-icon.png", type: "image/png" }],
+  },
+  openGraph: {
+    title: "EntQha (انطقها) - English Vocabulary Guide",
+    description:
+      "Master English vocabulary and pronunciation with EntQha (انطقها) through interactive word cards and text-to-speech.",
+    url: "https://sema3ny.vercel.app",
+    siteName: "EntQha (انطقها)",
+    images: [
+      {
+        url: "/opengraph.png",
+        width: 1200,
+        height: 630,
+        alt: "EntQha (انطقها) - English Vocabulary Guide OpenGraph Image",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EntQha (انطقها) - English Vocabulary Guide",
+    description:
+      "Master English vocabulary and pronunciation with EntQha (انطقها) through interactive word cards and text-to-speech.",
+    images: ["/opengraph.png"],
   },
 }
 
