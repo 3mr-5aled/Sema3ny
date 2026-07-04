@@ -12,7 +12,7 @@ A modern, full-stack English teaching web application with powerful CMS function
 [![Prisma](https://img.shields.io/badge/Prisma-7.8-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-5.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-[🚀 Live Demo](#) • [📖 Documentation](#-documentation) • [🐛 Report Bug](../../issues) • [✨ Request Feature](../../issues)
+[🚀 Live Demo](https://entqha.vercel.app/) • [🐛 Report Bug](../../issues) • [✨ Request Feature](../../issues)
 
 ---
 
@@ -107,14 +107,14 @@ A modern, full-stack English teaching web application with powerful CMS function
 <div align="center">
 
 ### Frontend
-![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js) 
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript) 
-![TailwindCSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC?logo=tailwind-css)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js) 
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react) 
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue?logo=typescript) 
+![TailwindCSS](https://img.shields.io/badge/Tailwind-4.0-38B2AC?logo=tailwind-css)
 
 ### Backend
 ![Next.js API](https://img.shields.io/badge/Next.js_API_Routes-black?logo=next.js)
-![Prisma](https://img.shields.io/badge/Prisma_ORM-5.0-2D3748?logo=prisma)
+![Prisma](https://img.shields.io/badge/Prisma_ORM-7.8.0-2D3748?logo=prisma)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)
 
 ### Development & Deployment
