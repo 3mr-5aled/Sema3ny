@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📚 Sema3ny - English Vocabulary Guide
+# 📚 EntQha - English Vocabulary Guide
 
 ### *Your Interactive Platform for Mastering English Vocabulary*
 
@@ -1036,8 +1036,8 @@ Progressive Web App settings in [public/manifest.json](public/manifest.json):
 
 ```json
 {
-  "name": "Sema3ny - English Vocabulary Guide",
-  "short_name": "Sema3ny",
+  "name": "EntQha - English Vocabulary Guide",
+  "short_name": "EntQha",
   "description": "Interactive English vocabulary learning platform",
   "theme_color": "#1e40af",
   "background_color": "#ffffff",
@@ -1244,7 +1244,7 @@ This project is created for **educational purposes**.
 When using or modifying this project, please include:
 
 ```
-Original Project: Sema3ny - English Vocabulary Guide
+Original Project: EntQha - English Vocabulary Guide
 Created by: Mr Khaled Morcy
 Developer: 3mr 5aled (https://3mr5aled.vercel.app/)
 ```
@@ -1421,10 +1421,10 @@ If you find this project helpful, please consider giving it a star! It helps oth
 
 Made with ❤️ for education by [Mr Khaled Morcy](tel:+201023144722) and [3mr 5aled](https://3mr5aled.vercel.app/)
 
-**Copyright © 2026 Sema3ny Project**
+**Copyright © 2026 EntQha Project**
 
 ---
 
-[🔝 Back to Top](#-Sema3ny---english-vocabulary-guide)
+[🔝 Back to Top](#-EntQha---english-vocabulary-guide)
 
 </div>
