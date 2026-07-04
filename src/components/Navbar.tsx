@@ -5,28 +5,26 @@ import Image from "next/image"
 
 export function Navbar() {
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <nav className="sticky top-0 z-40 glass-effect border-b border-gray-200/80 dark:border-gray-800/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center group">
               <Image
-                src="/logo.svg"
-                alt="Sema3ny Logo"
-                width={40}
+                src="/nav-logo.png"
+                alt="EntQha Logo"
+                width={140}
                 height={40}
-                className="h-10 w-10"
+                className="h-10 w-auto transition-transform group-hover:scale-[1.02] duration-200"
+                priority
               />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Sema3ny
-              </span>
             </Link>
           </div>
 
           <div className="flex items-center space-x-4">
             <Link
               href="/"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-blue-50 dark:hover:bg-blue-950/30"
             >
               Study Levels
             </Link>

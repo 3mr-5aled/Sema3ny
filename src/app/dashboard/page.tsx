@@ -7,8 +7,8 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to admin route
-    router.replace("/admin")
+    // Redirect to gatekeeper route
+    router.replace("/gatekeeper")
   }, [router])
 
   return (
@@ -16,7 +16,7 @@ export default function DashboardPage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600 dark:text-gray-400">
-          Redirecting to admin...
+          Redirecting to gatekeeper...
         </p>
       </div>
     </div>

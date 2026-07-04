@@ -106,53 +106,60 @@ export function StudyLevels() {
       {levels.map((level) => (
         <div
           key={level.id}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6 border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all p-6 border-t-4 border-t-blue-500 border-x border-b border-gray-100 dark:border-gray-800 flex flex-col justify-between group"
         >
-          <div className="flex items-center space-x-3 mb-4">
-            <FaGraduationCap className="text-2xl text-blue-600 dark:text-blue-400" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {level.name}
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center space-x-2">
-                <FaLayerGroup />
-                <span>{level.units.length} Units</span>
+          <div>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-500 transition-colors">
+                <FaGraduationCap className="text-xl" />
               </div>
-              <div className="flex items-center space-x-2">
-                <FaBook />
-                <span>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors">
+                {level.name}
+              </h2>
+            </div>
+
+            <div className="space-y-3.5 my-4">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-1.5 bg-gray-50 dark:bg-gray-950 px-2.5 py-1.5 rounded-md">
+                  <FaLayerGroup className="text-gray-400" />
+                  <span>{level.units.length} Units</span>
+                </div>
+                <div className="flex items-center space-x-1.5 bg-gray-50 dark:bg-gray-950 px-2.5 py-1.5 rounded-md">
+                  <FaBook className="text-gray-400" />
+                  <span>
+                    {level.units.reduce(
+                      (total, unit) => total + unit.lessons.length,
+                      0
+                    )}{" "}
+                    Lessons
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-400 dark:text-gray-500 italic pl-1">
+                📚 Total of{" "}
+                <span className="font-bold text-gray-700 dark:text-gray-300">
                   {level.units.reduce(
-                    (total, unit) => total + unit.lessons.length,
+                    (total, unit) =>
+                      total +
+                      unit.lessons.reduce(
+                        (lessonTotal, lesson) => lessonTotal + lesson.words.length,
+                        0
+                      ),
                     0
-                  )}{" "}
-                  Lessons
-                </span>
+                  )}
+                </span>{" "}
+                vocabulary words
               </div>
             </div>
-
-            <div className="text-sm text-gray-500 dark:text-gray-500">
-              {level.units.reduce(
-                (total, unit) =>
-                  total +
-                  unit.lessons.reduce(
-                    (lessonTotal, lesson) => lessonTotal + lesson.words.length,
-                    0
-                  ),
-                0
-              )}{" "}
-              vocabulary words
-            </div>
-
-            <Link
-              href={`/levels/${level.id}`}
-              className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg transition-colors font-medium mt-4"
-            >
-              Start Learning
-            </Link>
           </div>
+
+          <Link
+            href={`/levels/${level.id}`}
+            className="block w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-center py-2.5 rounded-lg transition-all font-semibold text-sm mt-4 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 duration-200"
+          >
+            Start Learning
+          </Link>
         </div>
       ))}
     </div>

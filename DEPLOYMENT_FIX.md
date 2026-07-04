@@ -149,7 +149,7 @@ export const runtime = "nodejs"  // ✅ Added
 ### Monitor Build Progress:
 
 **Vercel Dashboard:**
-https://vercel.com/dashboard → "sema3ny" project
+https://vercel.com/dashboard → "Sema3ny" project
 
 **Expected Timeline:**
 - Build: ~2-3 minutes
@@ -160,10 +160,10 @@ https://vercel.com/dashboard → "sema3ny" project
 
 ```bash
 # 1. Visit production URL
-https://sema3ny.vercel.app
+https://Sema3ny.vercel.app
 
 # 2. Test admin login
-https://sema3ny.vercel.app/admin
+https://Sema3ny.vercel.app/admin
 Email: admin@Sema3ny.com
 Password: Sema3ny@2020*
 
@@ -281,7 +281,7 @@ fix: Reduce middleware size for Vercel Edge Runtime
 ### Vercel Deployment:
 ```
 🚀 Status: Deploying...
-📍 URL: https://sema3ny.vercel.app
+📍 URL: https://Sema3ny.vercel.app
 ⏱️ ETA: ~3 minutes
 ```
 
@@ -291,7 +291,7 @@ fix: Reduce middleware size for Vercel Edge Runtime
 
 After deployment completes:
 
-- [ ] Production URL loads: https://sema3ny.vercel.app
+- [ ] Production URL loads: https://Sema3ny.vercel.app
 - [ ] Homepage shows "Sema3ny" branding
 - [ ] Logo displays correctly
 - [ ] Footer shows "Mr Khaled Morcy" and phone
@@ -356,4 +356,4 @@ git push origin main
 
 **Expected:** Deployment successful in ~3 minutes
 
-**Then:** Your app will be live at https://sema3ny.vercel.app! 🚀
+**Then:** Your app will be live at https://Sema3ny.vercel.app! 🚀

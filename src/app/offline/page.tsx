@@ -4,12 +4,12 @@ import Link from "next/link"
 
 export default function OfflinePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-950 dark:via-gray-900 dark:to-green-950/20 p-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center border border-blue-100 dark:border-blue-900/30">
             <svg
-              className="w-12 h-12 text-gray-400 dark:text-gray-500"
+              className="w-12 h-12 text-blue-500 dark:text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -27,37 +27,37 @@ export default function OfflinePage() {
             You&apos;re Offline
           </h1>
 
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
+          <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm">
             It looks like you&apos;re not connected to the internet. Some
             features may not be available.
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Tip:</strong> You can still browse previously visited
-              pages while offline.
+          <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+              💡 <strong>Tip:</strong> You can still browse previously visited
+              lessons while offline!
             </p>
           </div>
 
           <Link
             href="/"
-            className="inline-block w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors"
+            className="inline-block w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
           >
             Go to Homepage
           </Link>
 
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full px-6 py-3 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-sm cursor-pointer"
           >
             Try Again
           </button>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-8 pt-8 border-t border-gray-200/50 dark:border-gray-800/50">
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">
             Connection will be restored automatically when you&apos;re back
             online.
           </p>

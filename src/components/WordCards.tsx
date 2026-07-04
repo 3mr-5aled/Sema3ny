@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { FaVolumeUp } from "react-icons/fa"
 import { USFlag, UKFlag } from "./Flags"
 
@@ -40,49 +40,236 @@ const partOfSpeechLabels = {
 
 export function WordCards({ words }: WordCardsProps) {
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null)
+  
+  // Refs for managing HTML5 audio caching and active audio element
+  const audioCacheRef = useRef<Record<string, HTMLAudioElement>>({})
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Ensure playback and speech are stopped if the component is unmounted
+  useEffect(() => {
+    return () => {
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause()
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
+
+  const speakWordFallback = (
+    wordId: number,
+    word: string,
+    accent: "american" | "british"
+  ) => {
+    if (!("speechSynthesis" in window)) {
+      setSpeakingWordId(null)
+      showErrorMessage("Text-to-speech not supported on this device")
+      return
+    }
+
+    try {
+      window.speechSynthesis.cancel()
+
+      const utterance = new SpeechSynthesisUtterance(word)
+
+      // Store utterance in a global array to prevent GC issues
+      const win = window as unknown as { _activeUtterances?: SpeechSynthesisUtterance[] }
+      if (!win._activeUtterances) {
+        win._activeUtterances = []
+      }
+      win._activeUtterances.push(utterance)
+
+      const targetLang = accent === "british" ? "en-GB" : "en-US"
+      utterance.lang = targetLang
+
+      // Find local high-quality voices to prevent Microsoft Edge from calling
+      // online neural voices that might fail with 'synthesis-failed'
+      const voices = window.speechSynthesis.getVoices()
+      let targetVoice = null
+
+      if (voices && voices.length > 0) {
+        const isOnlineVoice = (name: string) =>
+          name.toLowerCase().includes("online") ||
+          name.toLowerCase().includes("natural") ||
+          name.toLowerCase().includes("neural")
+
+        // 1. Get matching target language voices (e.g., en-GB)
+        const targetLangLower = targetLang.toLowerCase()
+        const matchingVoices = voices.filter((v) => {
+          const vLang = v.lang.toLowerCase().replace("_", "-")
+          return vLang === targetLangLower || vLang.startsWith(targetLangLower)
+        })
+
+        if (matchingVoices.length > 0) {
+          // A. First choice: Local/offline voices that do NOT have online keywords in their name
+          let filteredVoices = matchingVoices.filter(
+            (v) => v.localService && !isOnlineVoice(v.name)
+          )
+
+          // B. Second choice: Any matching voices of target accent that do NOT have online keywords
+          if (filteredVoices.length === 0) {
+            filteredVoices = matchingVoices.filter((v) => !isOnlineVoice(v.name))
+          }
+
+          // C. Third choice: Local/offline voices even if they have online keywords in their name
+          if (filteredVoices.length === 0) {
+            filteredVoices = matchingVoices.filter((v) => v.localService)
+          }
+
+          // D. Fallback: Any matching target-accent voice
+          const sourceVoices = filteredVoices.length > 0 ? filteredVoices : matchingVoices
+
+          if (sourceVoices.length > 0) {
+            if (accent === "british") {
+              // Explicitly check for preferred British voices: Ryan or Thomas!
+              targetVoice =
+                matchingVoices.find((v) => v.name.includes("Ryan")) ||
+                matchingVoices.find((v) => v.name.includes("Thomas")) ||
+                sourceVoices.find(
+                  (v) =>
+                    v.name.includes("Hazel") ||
+                    v.name.includes("Susan") ||
+                    v.name.includes("George") ||
+                    v.name.includes("Great Britain")
+                ) || sourceVoices[0]
+            } else {
+              // Explicitly check for preferred American voices: Andrew, Brian, or Eric!
+              targetVoice =
+                matchingVoices.find((v) => v.name.includes("Andrew")) ||
+                matchingVoices.find((v) => v.name.includes("Brian")) ||
+                matchingVoices.find((v) => v.name.includes("Eric")) ||
+                sourceVoices.find(
+                  (v) =>
+                    v.name.includes("Zira") ||
+                    v.name.includes("David") ||
+                    v.name.includes("Google") ||
+                    v.name.includes("United States")
+                ) || sourceVoices[0]
+            }
+          }
+        }
+      }
+
+      // If no matching voice for the target accent could be resolved, show an accent-specific warning
+      if (!targetVoice) {
+        setSpeakingWordId(null)
+        showErrorMessage(
+          accent === "british"
+            ? "British accent isn't available right now"
+            : "American accent isn't available right now"
+        )
+        return
+      }
+
+      utterance.voice = targetVoice
+      console.log(`Fallback TTS selected voice: ${targetVoice.name} (${targetVoice.lang}) local=${targetVoice.localService}`)
+
+      utterance.rate = 0.9
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+
+      utterance.onend = () => {
+        setSpeakingWordId(null)
+        if (win._activeUtterances) {
+          win._activeUtterances = win._activeUtterances.filter((u) => u !== utterance)
+        }
+      }
+
+      utterance.onerror = (event) => {
+        if (win._activeUtterances) {
+          win._activeUtterances = win._activeUtterances.filter((u) => u !== utterance)
+        }
+
+        if (event.error === "interrupted" || event.error === "canceled") {
+          console.log(`Fallback TTS interrupted normally: ${event.error}`)
+          return
+        }
+
+        console.error("Fallback TTS synthesis error:", event.error || event)
+        setSpeakingWordId(null)
+        showErrorMessage(
+          accent === "british"
+            ? "British accent isn't available right now"
+            : "American accent isn't available right now"
+        )
+      }
+
+      window.speechSynthesis.speak(utterance)
+    } catch (fallbackErr) {
+      console.error("Fallback TTS error:", fallbackErr)
+      setSpeakingWordId(null)
+      showErrorMessage(
+        accent === "british"
+          ? "British accent isn't available right now"
+          : "American accent isn't available right now"
+      )
+    }
+  }
 
   const speakWord = (
     wordId: number,
     word: string,
     accent: "american" | "british"
   ) => {
-    // Check if speech synthesis is supported
-    if (!("speechSynthesis" in window)) {
-      showErrorMessage("Text-to-speech not supported on this device")
-      return
+    // 1. Cancel any playing Web Speech API utterances
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel()
     }
 
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel()
-
-    // Set loading state
-    setSpeakingWordId(`${wordId}-${accent}`)
-
-    // Create utterance
-    const utterance = new SpeechSynthesisUtterance(word)
-
-    // Set language/locale based on accent
-    utterance.lang = accent === "british" ? "en-GB" : "en-US"
-
-    // Optimize for natural speech
-    utterance.rate = 0.9
-    utterance.pitch = 1.0
-    utterance.volume = 1.0
-
-    // Event listeners
-    utterance.onend = () => {
-      setSpeakingWordId(null)
+    // 2. Stop any active HTML5 audio element playing
+    if (activeAudioRef.current) {
+      activeAudioRef.current.pause()
+      activeAudioRef.current.currentTime = 0
     }
 
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error:", event)
-      setSpeakingWordId(null)
-      showErrorMessage("Unable to play pronunciation")
-    }
+    // 3. Mark state as speaking
+    const speakingId = `${wordId}-${accent}`
+    setSpeakingWordId(speakingId)
 
-    // Speak
-    window.speechSynthesis.speak(utterance)
-    console.log(`Speaking: ${word} (${utterance.lang})`)
+    const cacheKey = `${word.toLowerCase()}-${accent}`
+
+    // 4. Primary Method: Google Translate TTS API via HTML5 Audio
+    try {
+      let audio = audioCacheRef.current[cacheKey]
+
+      if (!audio) {
+        const langCode = accent === "british" ? "en-GB" : "en-US"
+        const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodeURIComponent(
+          word
+        )}`
+        audio = new Audio(googleTtsUrl)
+        audioCacheRef.current[cacheKey] = audio
+      }
+
+      activeAudioRef.current = audio
+
+      audio.onended = () => {
+        if (activeAudioRef.current === audio) {
+          setSpeakingWordId(null)
+          activeAudioRef.current = null
+        }
+      }
+
+      audio.onerror = (err) => {
+        console.warn(`Primary Google TTS failed for "${word}" (${accent}), trying native fallback...`, err)
+        if (activeAudioRef.current === audio) {
+          activeAudioRef.current = null
+        }
+        speakWordFallback(wordId, word, accent)
+      }
+
+      audio.play().catch((playErr) => {
+        console.warn(`HTML5 Play prevented for "${word}" (${accent}), trying native fallback...`, playErr)
+        if (activeAudioRef.current === audio) {
+          activeAudioRef.current = null
+        }
+        speakWordFallback(wordId, word, accent)
+      })
+    } catch (err) {
+      console.warn("HTML5 audio setup error, falling back to native TTS:", err)
+      speakWordFallback(wordId, word, accent)
+    }
   }
 
   const showErrorMessage = (text: string) => {
@@ -190,10 +377,10 @@ function WordCard({
   const isAnySpeaking = speakingWordId !== null
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 dark:border-gray-700 group">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md hover:border-blue-500/20 transition-all duration-300 p-6 border border-gray-100 dark:border-gray-800 group">
       {/* English Word */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
           {word.en}
         </h3>
 
@@ -202,16 +389,16 @@ function WordCard({
           <button
             onClick={() => onSpeak(word.id, word.en, "american")}
             disabled={isAnySpeaking}
-            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
+            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center space-x-1.5 ${
               isAmericanSpeaking
                 ? "bg-blue-400 cursor-wait"
                 : isAnySpeaking
-                ? "bg-blue-300 cursor-not-allowed opacity-50"
+                ? "bg-blue-300 cursor-not-allowed opacity-40"
                 : "bg-blue-500 hover:bg-blue-600"
             }`}
             title="American pronunciation"
           >
-            <USFlag className="w-5 h-3" />
+            <USFlag className="w-5 h-3 shadow-xs" />
             {isAmericanSpeaking ? (
               <div className="relative h-3.5 w-3.5">
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -222,22 +409,22 @@ function WordCard({
                 </div>
               </div>
             ) : (
-              <FaVolumeUp className="h-3.5 w-3.5" />
+              <FaVolumeUp className="h-3.5 w-3.5 text-white/95" />
             )}
           </button>
           <button
             onClick={() => onSpeak(word.id, word.en, "british")}
             disabled={isAnySpeaking}
-            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-1.5 ${
+            className={`p-2.5 rounded-lg text-white transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center space-x-1.5 ${
               isBritishSpeaking
-                ? "bg-indigo-400 cursor-wait"
+                ? "bg-green-400 cursor-wait"
                 : isAnySpeaking
-                ? "bg-indigo-300 cursor-not-allowed opacity-50"
-                : "bg-indigo-500 hover:bg-indigo-600"
+                ? "bg-green-300 cursor-not-allowed opacity-40"
+                : "bg-green-500 hover:bg-green-600"
             }`}
             title="British pronunciation"
           >
-            <UKFlag className="w-5 h-3" />
+            <UKFlag className="w-5 h-3 shadow-xs" />
             {isBritishSpeaking ? (
               <div className="relative h-3.5 w-3.5">
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -248,7 +435,7 @@ function WordCard({
                 </div>
               </div>
             ) : (
-              <FaVolumeUp className="h-3.5 w-3.5" />
+              <FaVolumeUp className="h-3.5 w-3.5 text-white/95" />
             )}
           </button>
         </div>
@@ -257,7 +444,7 @@ function WordCard({
       {/* Arabic Translation */}
       <div className="mb-4">
         <p
-          className="text-xl text-gray-700 dark:text-gray-300"
+          className="text-lg sm:text-xl font-bold text-gray-700 dark:text-gray-300 arabic-text"
           dir="rtl"
           lang="ar"
         >
@@ -268,7 +455,7 @@ function WordCard({
       {/* Part of Speech Tag */}
       <div className="flex justify-start">
         <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${partColor}`}
+          className={`px-3 py-1 rounded-[6px] text-xs font-semibold tracking-wider uppercase ${partColor}`}
         >
           {partLabel}
         </span>

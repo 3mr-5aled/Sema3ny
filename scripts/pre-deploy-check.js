@@ -99,7 +99,7 @@ console.log("")
 // 5. Check dependencies
 console.log("📦 Checking dependencies...")
 checkCommand(
-  "npm list --depth=0 > /dev/null 2>&1",
+  "npm list --depth=0",
   "All dependencies installed"
 )
 console.log("")

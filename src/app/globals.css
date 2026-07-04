@@ -1,28 +1,73 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FFFFFF;
+  --foreground: #0F172A;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-inter), var(--font-cairo), system-ui, sans-serif;
+  --font-cairo: var(--font-cairo), system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Redefine Tailwind's standard colors to map directly to the Entqha design system! */
+  
+  /* Overrides for blue/indigo classes -> Primary Purple */
+  --color-blue-50: #F5F3FF;
+  --color-blue-100: #EDE9FE;
+  --color-blue-200: #DDD6FE;
+  --color-blue-300: #C4B5FD;
+  --color-blue-400: #A78BFA;  /* Light Purple */
+  --color-blue-500: #6D28D9;  /* Primary Purple */
+  --color-blue-600: #7C3AED;  /* Hover Purple */
+  --color-blue-700: #5B21B6;  /* Dark Purple */
+  --color-blue-800: #4C1D95;
+  --color-blue-900: #2E1065;
+  --color-blue-950: #1E0045;
+
+  --color-indigo-50: #F5F3FF;
+  --color-indigo-100: #EDE9FE;
+  --color-indigo-200: #DDD6FE;
+  --color-indigo-300: #C4B5FD;
+  --color-indigo-400: #A78BFA;
+  --color-indigo-500: #6D28D9;
+  --color-indigo-600: #7C3AED;
+  --color-indigo-700: #5B21B6;
+  --color-indigo-800: #4C1D95;
+  --color-indigo-900: #2E1065;
+
+  /* Overrides for green/emerald -> Success */
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #10B981;  /* Success Emerald */
+  --color-green-600: #059669;
+  --color-green-700: #047857;
+  --color-green-800: #065f46;
+  --color-green-900: #064e3b;
+
+  /* Feedback Colors */
+  --color-red-500: #EF4444;    /* Error Red */
+  --color-amber-500: #F59E0B;  /* Warning Amber */
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(circle at 100% 0%, rgba(109, 40, 217, 0.03) 0%, transparent 45%),
+              radial-gradient(circle at 0% 100%, rgba(124, 58, 237, 0.03) 0%, transparent 45%),
+              var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Force Cairo font for Arabic texts */
+[lang="ar"], [dir="rtl"], .arabic-text {
+  font-family: var(--font-cairo), var(--font-sans);
 }
 
 @keyframes slideIn {
@@ -53,4 +98,11 @@ body {
 
 .animate-slide-down {
   animation: slideDown 0.3s ease-out;
+}
+
+/* Glassmorphism utility */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }

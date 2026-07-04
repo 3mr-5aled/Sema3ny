@@ -18,7 +18,7 @@ The production database might be different from local, or environment variables 
    - `DATABASE_URL` (pooled connection)
    - `DIRECT_URL` (direct connection)
    - `AUTH_SECRET`
-   - `AUTH_URL` (should be `https://sema3ny.vercel.app`)
+   - `AUTH_URL` (should be `https://Sema3ny.vercel.app`)
 
 ### Issue 2: Production Database is Empty
 If the production database (Neon) is empty, no pages will be generated.
@@ -80,14 +80,14 @@ Check your `package.json` has the postinstall script:
 
 3. **Verify Environment Variables:**
    - Ensure `DATABASE_URL` and `DIRECT_URL` are set in Vercel
-   - Ensure `AUTH_URL` is set to `https://sema3ny.vercel.app`
+   - Ensure `AUTH_URL` is set to `https://Sema3ny.vercel.app`
 
 ## Testing
 After redeployment, test these URLs:
-- https://sema3ny.vercel.app/
-- https://sema3ny.vercel.app/levels/1
-- https://sema3ny.vercel.app/levels/1/units/1
-- https://sema3ny.vercel.app/levels/1/units/1/lessons/1
+- https://Sema3ny.vercel.app/
+- https://Sema3ny.vercel.app/levels/1
+- https://Sema3ny.vercel.app/levels/1/units/1
+- https://Sema3ny.vercel.app/levels/1/units/1/lessons/1
 
 ## Service Worker Errors (Not Critical)
 The errors you're seeing:

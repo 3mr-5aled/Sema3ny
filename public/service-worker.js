@@ -1,17 +1,20 @@
-// Service Worker for Sema3ny PWA
+// Service Worker for EntQha PWA
 // Version 1.0.0
 
-const CACHE_NAME = "sema3ny-v1"
-const STATIC_CACHE = "sema3ny-static-v1"
-const DYNAMIC_CACHE = "sema3ny-dynamic-v1"
-const API_CACHE = "sema3ny-api-v1"
+const CACHE_NAME = "EntQha-v2"
+const STATIC_CACHE = "EntQha-static-v2"
+const DYNAMIC_CACHE = "EntQha-dynamic-v2"
+const API_CACHE = "EntQha-api-v2"
 
 // Assets to cache on install
 const STATIC_ASSETS = [
   "/",
   "/offline",
-  "/icon-192x192.png",
-  "/icon-512x512.png",
+  "/app-icon.png",
+  "/nav-logo.png",
+  "/logo.png",
+  "/launchericon-192x192.png",
+  "/launchericon-512x512.png",
 ]
 
 // Cache strategies
@@ -66,7 +69,7 @@ self.addEventListener("install", (event) => {
     caches.open(STATIC_CACHE).then((cache) => {
       console.log("[Service Worker] Caching static assets")
       return cache.addAll(STATIC_ASSETS)
-    })
+    }),
   )
   self.skipWaiting()
 })
@@ -88,9 +91,9 @@ self.addEventListener("activate", (event) => {
           .map((name) => {
             console.log("[Service Worker] Deleting old cache:", name)
             return caches.delete(name)
-          })
+          }),
       )
-    })
+    }),
   )
   self.clients.claim()
 })
@@ -177,17 +180,17 @@ self.addEventListener("push", (event) => {
       {
         action: "explore",
         title: "Open App",
-        icon: "/icon-192x192.png",
+        icon: "/launchericon-192x192.png",
       },
       {
         action: "close",
         title: "Close",
-        icon: "/icon-192x192.png",
+        icon: "/launchericon-192x192.png",
       },
     ],
   }
 
-  event.waitUntil(self.registration.showNotification("Sema3ny", options))
+  event.waitUntil(self.registration.showNotification("EntQha", options))
 })
 
 // Notification click handler
@@ -210,7 +213,7 @@ self.addEventListener("message", (event) => {
     event.waitUntil(
       caches.open(DYNAMIC_CACHE).then((cache) => {
         return cache.addAll(event.data.urls)
-      })
+      }),
     )
   }
 
@@ -218,7 +221,7 @@ self.addEventListener("message", (event) => {
     event.waitUntil(
       caches.keys().then((cacheNames) => {
         return Promise.all(cacheNames.map((name) => caches.delete(name)))
-      })
+      }),
     )
   }
 })

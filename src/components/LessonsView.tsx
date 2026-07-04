@@ -43,46 +43,53 @@ export function LessonsView({ lessons, levelId, unitId }: LessonsViewProps) {
       {lessons.map((lesson) => (
         <div
           key={lesson.id}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6 border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md hover:border-purple-500/30 transition-all p-6 border-t-4 border-t-purple-500 border-x border-b border-gray-100 dark:border-gray-800 flex flex-col justify-between group"
         >
-          <div className="flex items-center space-x-3 mb-4">
-            <FaBook className="text-2xl text-purple-600 dark:text-purple-400" />
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              {lesson.name}
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {lesson.words.length} vocabulary words
+          <div>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-500 transition-colors">
+                <FaBook className="text-xl" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                {lesson.name}
+              </h3>
             </div>
 
-            <div className="flex space-x-2 text-xs">
-              {lesson.words.filter((w) => w.category === "key").length > 0 && (
-                <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                  {lesson.words.filter((w) => w.category === "key").length} Key
-                  Words
-                </span>
-              )}
-              {lesson.words.filter((w) => w.category === "additional").length >
-                0 && (
-                <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                  {
-                    lesson.words.filter((w) => w.category === "additional")
-                      .length
-                  }{" "}
-                  Additional
-                </span>
-              )}
-            </div>
+            <div className="space-y-3.5 my-4 pl-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                📝 Contains{" "}
+                <span className="font-bold text-gray-800 dark:text-gray-200">
+                  {lesson.words.length}
+                </span>{" "}
+                vocabulary words
+              </div>
 
-            <Link
-              href={`/levels/${levelId}/units/${unitId}/lessons/${lesson.id}`}
-              className="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-3 rounded-lg transition-colors font-medium mt-4"
-            >
-              Practice Words
-            </Link>
+              <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                {lesson.words.filter((w) => w.category === "key").length > 0 && (
+                  <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 px-2 py-1 rounded">
+                    {lesson.words.filter((w) => w.category === "key").length} Key
+                  </span>
+                )}
+                {lesson.words.filter((w) => w.category === "additional").length >
+                  0 && (
+                  <span className="bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-900/30 px-2 py-1 rounded">
+                    {
+                      lesson.words.filter((w) => w.category === "additional")
+                        .length
+                    }{" "}
+                    Additional
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+
+          <Link
+            href={`/levels/${levelId}/units/${unitId}/lessons/${lesson.id}`}
+            className="block w-full bg-purple-500 hover:bg-purple-600 dark:bg-purple-500 dark:hover:bg-purple-600 text-white text-center py-2.5 rounded-lg transition-all font-semibold text-sm mt-4 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 duration-200"
+          >
+            Practice Words
+          </Link>
         </div>
       ))}
     </div>

@@ -270,7 +270,7 @@
 
 ## How to Use:
 
-1. **Go to Admin Panel:** https://sema3ny.vercel.app/admin
+1. **Go to Admin Panel:** https://Sema3ny.vercel.app/admin
 2. **Login** with your credentials
 3. **Create a Study Level** (e.g., "Grade 1")
 4. **Create a Unit** (e.g., "Basic Vocabulary")

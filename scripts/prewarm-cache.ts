@@ -3,7 +3,7 @@
  * This script visits all dynamic pages to populate Vercel's ISR cache
  */
 
-const BASE_URL = "https://sema3ny.vercel.app"
+const BASE_URL = "https://Sema3ny.vercel.app"
 
 async function prewarmPages() {
   console.log("🔥 Pre-warming ISR cache for all pages...\n")
@@ -37,10 +37,10 @@ async function prewarmPages() {
       for (const lesson of unit.lessons) {
         console.log(`      📝 Lesson ${lesson.id}: ${lesson.name}`)
         console.log(
-          `      ⏳ Warming /levels/${level.id}/units/${unit.id}/lessons/${lesson.id}...`
+          `      ⏳ Warming /levels/${level.id}/units/${unit.id}/lessons/${lesson.id}...`,
         )
         await fetch(
-          `${BASE_URL}/levels/${level.id}/units/${unit.id}/lessons/${lesson.id}`
+          `${BASE_URL}/levels/${level.id}/units/${unit.id}/lessons/${lesson.id}`,
         )
         totalPages++
         console.log(`      ✅ Done`)

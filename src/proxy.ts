@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public routes (student-facing pages and APIs)
@@ -38,8 +38,8 @@ export function middleware(request: NextRequest) {
     request.cookies.get("authjs.session-token") ||
     request.cookies.get("__Secure-authjs.session-token")
 
-  // Protect /admin routes
-  if (pathname.startsWith("/admin")) {
+  // Protect /gatekeeper routes
+  if (pathname.startsWith("/gatekeeper")) {
     if (!sessionCookie) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
