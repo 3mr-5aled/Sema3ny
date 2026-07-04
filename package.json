@@ -1,6 +1,6 @@
 {
-  "name": "vocab-guide-webapp",
-  "version": "0.1.0",
+  "name": "entqha",
+  "version": "1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
