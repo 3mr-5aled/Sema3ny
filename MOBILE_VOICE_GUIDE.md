@@ -93,16 +93,16 @@ The Sema3ny app uses a **hybrid TTS (Text-to-Speech) approach** to provide relia
 4. **Check console**: Look for error messages in browser DevTools
 
 ### British/American Accent Issues
-**This should no longer occur** with the new hybrid system, as Google TTS reliably provides both accents.
+**This is fully supported**. If Google TTS is blocked (e.g. by mobile Edge's built-in tracker block/adblocker) or fails, the system automatically falls back to native Web Speech API `speechSynthesis`. 
 
-If you experience issues:
-1. Check browser console for errors
-2. Verify internet connection
-3. Try refreshing the page
-4. Clear browser cache
+To ensure this works seamlessly on mobile:
+1. **Any English Voice Fallback**: If the exact requested accent (e.g. British English `en-GB`) is not installed or available on Chrome Mobile, the system automatically falls back to use any available English voice (like American `en-US`), rather than displaying an error.
+2. **Graceful Default Fallback**: If `getVoices()` is completely empty or no matching English voice can be found, the system still triggers synthesis using `utterance.lang` to leverage the browser's default voice.
 
-### MS Edge Mobile "Bugs Up"
-**This has been fixed** with the new hybrid approach. Google TTS works reliably on MS Edge Mobile without requiring any device settings or installations.
+### MS Edge Mobile & Chrome Mobile Voice Issues
+**Resolved**. Since Edge Mobile frequently blocks Google Translate TTS via tracking prevention, and since both Chrome and Edge load system voices asynchronously (causing `getVoices()` to be empty initially), we:
+1. Call `speechSynthesis.getVoices()` on mount and listen to `voiceschanged` to warm up the voices list early.
+2. Gracefully fall back to browser-level defaults when specific voice packs are not installed, ensuring voice synthesis always plays audio.
 
 ## For Developers
 

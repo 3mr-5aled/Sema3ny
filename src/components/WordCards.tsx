@@ -45,14 +45,30 @@ export function WordCards({ words }: WordCardsProps) {
   const audioCacheRef = useRef<Record<string, HTMLAudioElement>>({})
   const activeAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Ensure playback and speech are stopped if the component is unmounted
+  // Ensure playback and speech are stopped if the component is unmounted,
+  // and warm up the speechSynthesis voices list (loaded asynchronously on mobile browsers)
   useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      // Warm up the voices list early
+      window.speechSynthesis.getVoices()
+      
+      const handleVoicesChanged = () => {
+        window.speechSynthesis.getVoices()
+      }
+      window.speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged)
+      
+      return () => {
+        window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged)
+        if (activeAudioRef.current) {
+          activeAudioRef.current.pause()
+        }
+        window.speechSynthesis.cancel()
+      }
+    }
+
     return () => {
       if (activeAudioRef.current) {
         activeAudioRef.current.pause()
-      }
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel()
       }
     }
   }, [])
@@ -96,10 +112,18 @@ export function WordCards({ words }: WordCardsProps) {
 
         // 1. Get matching target language voices (e.g., en-GB)
         const targetLangLower = targetLang.toLowerCase()
-        const matchingVoices = voices.filter((v) => {
+        let matchingVoices = voices.filter((v) => {
           const vLang = v.lang.toLowerCase().replace("_", "-")
           return vLang === targetLangLower || vLang.startsWith(targetLangLower)
         })
+
+        // 2. If no exact accent match (e.g., en-GB not installed on mobile), fall back to any English voice
+        if (matchingVoices.length === 0) {
+          matchingVoices = voices.filter((v) => {
+            const vLang = v.lang.toLowerCase().replace("_", "-")
+            return vLang === "en" || vLang.startsWith("en-")
+          })
+        }
 
         if (matchingVoices.length > 0) {
           // A. First choice: Local/offline voices that do NOT have online keywords in their name
@@ -151,19 +175,12 @@ export function WordCards({ words }: WordCardsProps) {
         }
       }
 
-      // If no matching voice for the target accent could be resolved, show an accent-specific warning
-      if (!targetVoice) {
-        setSpeakingWordId(null)
-        showErrorMessage(
-          accent === "british"
-            ? "British accent isn't available right now"
-            : "American accent isn't available right now"
-        )
-        return
+      if (targetVoice) {
+        utterance.voice = targetVoice
+        console.log(`Fallback TTS selected voice: ${targetVoice.name} (${targetVoice.lang}) local=${targetVoice.localService}`)
+      } else {
+        console.log(`Fallback TTS: No matching voice found in getVoices() for ${targetLang}. Relying on browser language selection fallback.`)
       }
-
-      utterance.voice = targetVoice
-      console.log(`Fallback TTS selected voice: ${targetVoice.name} (${targetVoice.lang}) local=${targetVoice.localService}`)
 
       utterance.rate = 0.9
       utterance.pitch = 1.0
